@@ -1,0 +1,2650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 日常打卡小工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            min-height: 80vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 20px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .sync-status.online { background: rgba(46, 204, 113, 0.3); }
+        .sync-status.offline { background: rgba(231, 76, 60, 0.3); }
+        .sync-status.syncing { background: rgba(241, 196, 15, 0.3); }
+
+        .assets-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .asset-item {
+            text-align: center;
+        }
+
+        .asset-icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .asset-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .asset-label {
+            font-size: 18px;
+            color: #666;
+        }
+
+        /* 我的目标项特殊样式 */
+        .goal-item {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .goal-item .edit-icon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .goal-item:hover .edit-icon {
+            opacity: 1;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .checkin-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkin-item {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .checkin-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .checkin-item.completed {
+            background: #d4edda;
+            opacity: 0.8;
+        }
+
+        .checkin-info {
+            flex: 1;
+        }
+
+        .checkin-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .checkin-content {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .checkin-reward {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .checkin-btn {
+            padding: 10px 24px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .checkin-btn.active {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .checkin-btn.completed {
+            background: #6c757d;
+            color: white;
+        }
+
+        .checkin-btn:disabled {
+            background: #dee2e6;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .time-hint {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 8px;
+        }
+
+        .time-hint.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .time-hint.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover {
+            background: #e3f2fd;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close-btn {
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-input.small {
+            width: 80px;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .streak-rewards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .streak-reward-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .streak-reward-item label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .card-hover {
+            transition: all 0.3s;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .goals-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .goal-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .goal-delete {
+            background: none;
+            border: none;
+            color: #1976d2;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            margin-left: 5px;
+        }
+
+        .goal-tag:hover .goal-delete {
+            opacity: 1;
+        }
+
+        .goal-delete:hover {
+            color: #d32f2f;
+        }
+
+        .goal-tag input {
+            border: none;
+            background: transparent;
+            color: inherit;
+            font-size: 14px;
+            width: 120px;
+            outline: none;
+        }
+
+        .reward-rules {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .rule-item input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .plan-editor {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .history-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 15px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .calendar-day.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .calendar-day.partial {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .calendar-day.empty {
+            background: #f8f9fa;
+            color: #ccc;
+        }
+
+        .makeup-badge {
+            font-size: 8px;
+            color: #d32f2f;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .exchange-section {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .exchange-rate {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .exchange-input {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .exchange-input input {
+            width: 120px;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .today-progress {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            color: #666;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        /* 主要内容区布局 */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            padding: 0 20px;
+        }
+
+        .extra-rewards-section {
+            flex: 1;
+            min-width: 400px;
+        }
+
+        .checkin-section {
+            flex: 1;
+            min-width: 400px;
+        }
+
+        /* 表格容器样式 */
+        .extra-rewards-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .history-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* 滚动条样式 */
+        .extra-rewards-container::-webkit-scrollbar,
+        .history-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .extra-rewards-container::-webkit-scrollbar-track,
+        .history-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .extra-rewards-container::-webkit-scrollbar-thumb,
+        .history-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .extra-rewards-container::-webkit-scrollbar-thumb:hover,
+        .history-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 小按钮样式 */
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        /* 额外奖励表格样式 */
+        .extra-rewards-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .extra-rewards-table th,
+        .extra-rewards-table td {
+            border: 1px solid transparent;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .extra-rewards-table th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            z-index: 1;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .extra-rewards-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        /* 储蓄工具样式 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .nav-btn {
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .nav-btn.active {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+        
+        .sub-nav-btn {
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .sub-nav-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .piggy-bank {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        .emoji-btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .emoji-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .emoji-btn.selected {
+            transform: scale(1.2);
+            background: #e0e7ff;
+            border-color: #667eea;
+        }
+        
+        .transaction-item {
+            transition: all 0.3s;
+        }
+        
+        .transaction-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .transaction-item:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            animation: fall linear forwards;
+            z-index: 9999;
+        }
+        
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(360deg); }
+        }
+        
+        /* 储蓄功能专用模态框样式 - 使用唯一类名避免冲突 */
+        .savings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .savings-modal.show {
+            display: flex;
+        }
+
+        /* 储蓄容器样式 - 占满宽度减少留白 */
+        .savings-container {
+            width: 100%;
+            max-width: 100%;
+            padding: 0 10px;
+        }
+
+        .savings-container .glass-panel {
+            max-width: 100%;
+        }
+
+        .savings-container .page {
+            width: 100%;
+        }
+
+        .savings-container table {
+            width: 100%;
+        }
+
+        .savings-container .stats-table {
+            width: 100%;
+        }
+
+        /* 导航按钮在储蓄界面的样式 */
+        .savings-container .nav-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 8px;
+            font-size: 16px;
+        }
+
+        .savings-container .category-btn {
+            min-width: 80px;
+            padding: 10px 15px;
+        }
+
+        /* 记一笔页面样式优化 */
+        .savings-container #page-add .glass-panel {
+            padding: 20px;
+        }
+
+        .savings-container .emoji-btn {
+            min-width: 70px;
+            min-height: 70px;
+        }
+
+        .savings-container input[type="number"],
+        .savings-container input[type="text"] {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* 列表区域占满宽度 */
+        .savings-container .list-view {
+            width: 100%;
+        }
+
+        .savings-container #transactionList,
+        .savings-container #weekTransactions,
+        .savings-container #monthTransactions {
+            width: 100%;
+        }
+
+        /* 表格列宽优化 */
+        .savings-container .stats-table th,
+        .savings-container .stats-table td {
+            padding: 12px 8px;
+        }
+        
+        .data-fix-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            display: none;
+        }
+        
+        .data-fix-btn.show {
+            display: block;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .stats-table th,
+        .stats-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .stats-table th {
+            background: #f3f4f6;
+            font-weight: bold;
+            color: #374151;
+            position: sticky;
+            top: 0;
+        }
+        
+        .stats-table tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .stats-table tr:hover {
+            background: #e0e7ff;
+        }
+        
+        .edit-btn {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .edit-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .item-input {
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            width: 100%;
+        }
+        
+        .item-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- 加载提示 -->
+    <div id="loadingHint" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 30px; border-radius: 16px; text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+            <div id="loadingText" style="font-size: 16px;">正在加载数据...</div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- 主应用 -->
+        <div id="app">
+            <!-- 头部 -->
+            <div class="header">
+                <h1>🌟 日常打卡小工具</h1>
+            </div>
+
+            <!-- 资产栏 -->
+            <div class="assets-bar">
+                <div class="asset-item">
+                    <div class="asset-icon">💎</div>
+                    <div class="asset-value" id="diamondCount">0</div>
+                    <div class="asset-label">钻石</div>
+                </div>
+                <div class="asset-item">
+                    <div class="asset-icon">💰</div>
+                    <div class="asset-value" id="moneyCount">0</div>
+                    <div class="asset-label">储蓄</div>
+                </div>
+                <div class="asset-item">
+                    <div class="asset-icon">📅</div>
+                    <div class="asset-value" id="streakCount">0</div>
+                    <div class="asset-label">连续打卡</div>
+                </div>
+                <div class="asset-item goal-item" onclick="showGoalsModal()">
+                    <div class="asset-icon">🎯</div>
+                    <div class="asset-value" id="goalAssetDisplay">平衡车</div>
+                    <div class="asset-label">我的目标</div>
+                    <div class="edit-icon" onclick="openGoalEditModal(event)">✏️</div>
+                </div>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="content">
+
+                <!-- 主要内容区 -->
+                <div class="main-content">
+                    <!-- 打卡区 -->
+                    <div class="section checkin-section">
+                        <div class="section-title">
+                            📝 今日打卡
+                            <span class="today-progress" id="todayProgress">5/7</span>
+                        </div>
+                        <div class="time-hint" id="timeHint">
+                            打卡时段：18:00 - 22:00
+                        </div>
+                        <div class="checkin-list" id="checkinList"></div>
+                    </div>
+
+                    <!-- 额外奖励模块 -->
+                    <div class="section extra-rewards-section">
+                        <div class="section-title">🏆 额外奖励</div>
+                        <div class="extra-rewards-container" id="extraRewardsContainer">
+                            <table class="extra-rewards-table">
+                                <thead>
+                                    <tr>
+                                        <th>序号</th>
+                                        <th>奖励名称</th>
+                                        <th>钻石奖励</th>
+                                        <th>奖励日期</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: #666;">暂无额外奖励</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary" onclick="addExtraReward()" style="margin-top: 10px;">+ 添加额外奖励</button>
+
+                        <!-- 历史记录模块 -->
+                        <div class="section history-section" style="margin-top: 30px;">
+                            <div class="section-title">📋 历史记录</div>
+                            <div class="history-container" id="historyContainer">
+                                <table class="extra-rewards-table">
+                                    <thead>
+                                        <tr>
+                                            <th>序号</th>
+                                            <th>记录名称</th>
+                                            <th>记录内容</th>
+                                            <th>记录日期</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; color: #666;">暂无历史记录</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-primary" onclick="addHistoryRecord()" style="margin-top: 10px;">+ 新增记录</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 储蓄子界面 -->
+            <div id="savingsContent" class="content hidden">
+                <div class="savings-container">
+                    <!-- Data Backup Button -->
+                    <button id="dataBackupBtn" class="data-fix-btn" onclick="exportPiggyBankData()" style="bottom: 80px;">
+                        💾 导出数据
+                    </button>
+                    
+                    <!-- Data Restore Button -->
+                    <input type="file" id="dataRestoreInput" accept=".json" class="hidden" onchange="importData(this)">
+                    <button id="dataRestoreBtn" class="data-fix-btn" onclick="document.getElementById('dataRestoreInput').click()" style="bottom: 140px;">
+                        ⬆️ 导入数据
+                    </button>
+
+                    <!-- Main Navigation -->
+                    <div class="glass-panel p-4 mb-6">
+                        <div class="flex justify-around items-center">
+                            <button class="nav-btn active text-gray-600 py-2 px-4" onclick="switchPage('add')">
+                                📝 记一笔
+                            </button>
+                            <button class="nav-btn text-gray-600 py-2 px-4" onclick="switchPage('list')">
+                                📋 收支明细
+                            </button>
+                            <button class="nav-btn text-gray-600 py-2 px-4" onclick="switchPage('week')">
+                                📅 周度收支
+                            </button>
+                            <button class="nav-btn text-gray-600 py-2 px-4" onclick="switchPage('month')">
+                                📊 月度收支
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Page: Add Transaction -->
+                    <div id="page-add" class="page active">
+                        <div class="glass-panel p-6">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">记一笔</h2>
+                            
+                            <form id="transactionForm" class="space-y-4">
+                                <!-- Type Selection -->
+                                <div class="flex gap-4 mb-4">
+                                    <label class="flex-1 cursor-pointer">
+                                        <input type="radio" name="type" value="income" class="hidden peer" checked onchange="toggleInputMode()">
+                                        <div class="peer-checked:bg-green-500 peer-checked:text-white bg-gray-100 text-gray-600 py-3 rounded-xl text-center font-bold transition-all">
+                                            🤑 收入 (+)
+                                        </div>
+                                    </label>
+                                    <label class="flex-1 cursor-pointer">
+                                        <input type="radio" name="type" value="expense" class="hidden peer" onchange="toggleInputMode()">
+                                        <div class="peer-checked:bg-red-500 peer-checked:text-white bg-gray-100 text-gray-600 py-3 rounded-xl text-center font-bold transition-all">
+                                            💸 支出 (-)
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Category -->
+                                <div>
+                                    <div class="text-sm text-gray-500 mb-2 font-bold">选择分类：</div>
+                                    <div class="flex flex-wrap gap-2" id="categoryContainer"></div>
+                                    <input type="hidden" id="category" value="allowance">
+                                </div>
+
+                                <!-- Item Name (Expense Only) -->
+                                <div id="itemNameInput" class="hidden">
+                                    <div class="text-sm text-gray-500 mb-2 font-bold">物品名称：</div>
+                                    <input type="text" id="itemName" placeholder="例如：乐高积木"
+                                        class="w-full px-4 py-3 text-lg font-bold bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                                </div>
+
+                                <!-- Income Mode: Simple Amount -->
+                                <div id="incomeInput">
+                                    <div class="text-sm text-gray-500 mb-2 font-bold">收入金额：</div>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">¥</span>
+                                        <input type="number" id="incomeAmount" step="0.01" placeholder="输入收入金额" required
+                                            class="w-full pl-8 pr-3 py-3 text-lg font-bold bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                                    </div>
+                                </div>
+
+                                <!-- Expense Mode: Price x Quantity -->
+                                <div id="expenseInput" class="hidden space-y-3">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">¥</span>
+                                            <input type="number" id="price" step="0.01" placeholder="单价"
+                                                class="w-full pl-8 pr-3 py-3 text-lg font-bold bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                                        </div>
+                                        <div class="relative">
+                                            <input type="number" id="quantity" step="1" min="1" value="1" placeholder="数量"
+                                                class="w-full px-3 py-3 text-lg font-bold bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">个</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-indigo-50 rounded-xl p-3 text-center">
+                                        <span class="text-gray-600 text-sm">小计：</span>
+                                        <span class="text-2xl font-black text-indigo-600" id="totalDisplay">¥0.00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Note -->
+                                <input type="text" id="note" placeholder="备注（可选）..." 
+                                    class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+
+                                <!-- Submit -->
+                                <button type="submit" 
+                                    class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xl rounded-xl shadow-lg hover:shadow-xl transform active:scale-95 transition-all">
+                                    💰 确认记账
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Page: Transaction List -->
+                    <div id="page-list" class="page">
+                        <div class="glass-panel p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-2xl font-bold text-gray-800">收支明细</h2>
+                                <div class="flex gap-2">
+                                    <button onclick="exportPiggyBankData()" class="text-green-500 hover:text-green-700 text-sm font-bold px-3 py-1 rounded-lg hover:bg-green-50 transition-colors">
+                                        📤 导出
+                                    </button>
+                                    <button onclick="document.getElementById('piggyBankImportInput').click()" class="text-blue-500 hover:text-blue-700 text-sm font-bold px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors">
+                                        📥 导入
+                                    </button>
+                                    <button onclick="clearAll()" class="text-red-400 hover:text-red-600 text-sm font-bold px-3 py-1 rounded-lg hover:bg-red-50 transition-colors">
+                                        🗑️ 清空
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="file" id="piggyBankImportInput" accept=".json" class="hidden" onchange="importPiggyBankData(this)">
+                            <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVFile(this)">
+                            
+                            <!-- Sub Navigation -->
+                            <div class="flex gap-2 mb-6 justify-center">
+                                <button class="sub-nav-btn active bg-gray-200 text-gray-700" onclick="switchListView('all')">
+                                    全部
+                                </button>
+                                <button class="sub-nav-btn bg-gray-200 text-gray-700" onclick="switchListView('income')">
+                                    收入明细
+                                </button>
+                                <button class="sub-nav-btn bg-gray-200 text-gray-700" onclick="switchListView('expense')">
+                                    支出明细
+                                </button>
+                            </div>
+                            
+                            <!-- All List (Card Style) -->
+                            <div id="list-all" class="list-view">
+                                <div id="transactionList" class="space-y-3 overflow-y-auto pr-2" style="max-height: calc(100vh - 400px);">
+                                    <!-- Transactions injected here -->
+                                </div>
+                                <div id="emptyState" class="text-center py-12 text-gray-400 hidden">
+                                    <div class="text-6xl mb-3">📭</div>
+                                    <p class="text-lg">还没有记账记录哦～</p>
+                                    <p class="text-sm">快记第一笔吧！</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Income List (Table Style) -->
+                            <div id="list-income" class="list-view hidden">
+                                <div class="overflow-x-auto" style="max-height: calc(100vh - 400px);">
+                                    <table class="stats-table">
+                                        <thead>
+                                            <tr>
+                                                <th>日期</th>
+                                                <th>类型</th>
+                                                <th class="text-right">小计</th>
+                                                <th class="text-center" style="width: 60px;">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="incomeTableBody"></tbody>
+                                    </table>
+                                </div>
+                                <div id="incomeEmpty" class="text-center py-8 text-gray-400 hidden">
+                                    <p>暂无收入记录</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Expense List (Table Style) -->
+                            <div id="list-expense" class="list-view hidden">
+                                <div class="overflow-x-auto" style="max-height: calc(100vh - 400px);">
+                                    <table class="stats-table">
+                                        <thead>
+                                            <tr>
+                                                <th>日期</th>
+                                                <th>类型</th>
+                                                <th>物品</th>
+                                                <th class="text-right">单价</th>
+                                                <th class="text-right">数量</th>
+                                                <th class="text-right">小计</th>
+                                                <th class="text-center" style="width: 80px;">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="expenseTableBody"></tbody>
+                                    </table>
+                                </div>
+                                <div id="expenseEmpty" class="text-center py-8 text-gray-400 hidden">
+                                    <p>暂无支出记录</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page: Weekly Stats -->
+                    <div id="page-week" class="page">
+                        <div class="glass-panel p-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">周度收支（最近10周）</h2>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>周度日期</th>
+                                            <th class="text-right">收入</th>
+                                            <th class="text-right">支出</th>
+                                            <th class="text-right">结余</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="weekTableBody"></tbody>
+                                </table>
+                            </div>
+                            
+                            <div id="weekEmpty" class="text-center py-8 text-gray-400 hidden">
+                                <p>暂无周度数据</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page: Monthly Stats -->
+                    <div id="page-month" class="page">
+                        <div class="glass-panel p-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">月度收支（最近6个月）</h2>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="stats-table">
+                                    <thead>
+                                        <tr>
+                                            <th>月度日期</th>
+                                            <th class="text-right">收入</th>
+                                            <th class="text-right">支出</th>
+                                            <th class="text-right">结余</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="monthTableBody"></tbody>
+                                </table>
+                            </div>
+                            
+                            <div id="monthEmpty" class="text-center py-8 text-gray-400 hidden">
+                                <p>暂无月度数据</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Goal Edit Modal -->
+                <div id="goalModal" class="savings-modal">
+                    <div class="glass-panel p-6 w-full max-w-sm mx-4">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">修改存钱目标</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">目标物品</label>
+                                <input type="text" id="editGoalName" placeholder="例如：平衡车" 
+                                    class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">目标价格（元）</label>
+                                <input type="number" id="editGoalPrice" step="0.01" placeholder="例如：500" 
+                                    class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div class="flex gap-3 mt-6">
+                                <button onclick="closeGoalModal()" class="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition-colors">
+                                    取消
+                                </button>
+                                <button onclick="saveGoalData()" class="flex-1 py-3 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 transition-colors">
+                                    保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Item Name Modal -->
+                <div id="editItemModal" class="savings-modal">
+                    <div class="glass-panel p-6 w-full max-w-sm mx-4">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">修改物品名称</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">物品名称</label>
+                                <input type="text" id="editItemNameInput" placeholder="输入物品名称" 
+                                    class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div class="flex gap-3 mt-6">
+                                <button onclick="closeEditItemModal()" class="flex-1 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition-colors">
+                                    取消
+                                </button>
+                                <button onclick="saveItemName()" class="flex-1 py-3 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-600 transition-colors">
+                                    保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航栏 -->
+            <div class="nav-bar">
+                <div class="nav-item" onclick="showCheckin()">
+                    <div class="nav-icon">📅</div>
+                    <div class="nav-label">打卡</div>
+                </div>
+                <div class="nav-item" onclick="showSavings()">
+                    <div class="nav-icon">💰</div>
+                    <div class="nav-label">储蓄</div>
+                </div>
+                <div class="nav-item" onclick="showPlans()">
+                    <div class="nav-icon">📝</div>
+                    <div class="nav-label">计划</div>
+                </div>
+                <div class="nav-item" onclick="showHistory()">
+                    <div class="nav-icon">📊</div>
+                    <div class="nav-label">历史</div>
+                </div>
+                <div class="nav-item" onclick="showExchange()">
+                    <div class="nav-icon">💱</div>
+                    <div class="nav-label">兑换</div>
+                </div>
+                <div class="nav-item" onclick="showSettings()">
+                    <div class="nav-icon">⚙️</div>
+                    <div class="nav-label">设置</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置模态框 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-title">⚙️ 设置</div>
+            
+
+
+            <div class="form-group">
+                <label class="form-label">补卡消耗钻石数</label>
+                <input type="number" class="form-input" id="makeupCost" value="30" onchange="updateMakeupCost(this.value)">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">数据管理</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                    <button class="btn btn-warning" onclick="resetData()">🗑️ 清空数据</button>
+                    <button class="btn btn-secondary" onclick="exportData()">📥 导出JSON</button>
+                    <button class="btn btn-secondary" onclick="resetDirectoryHandle()">📁 重置文件夹选择</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 导入JSON</button>
+                </div>
+                <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(this)">
+            </div>
+
+            <button class="btn btn-secondary" onclick="closeModal('settingsModal')" style="width: 100%; margin-top: 20px;">关闭</button>
+        </div>
+    </div>
+
+    <!-- 计划管理模态框 -->
+    <div class="modal" id="plansModal">
+        <div class="modal-content">
+            <div class="modal-title">
+                📝 打卡计划管理
+                <span class="modal-close-btn" onclick="closeModal('plansModal')">&times;</span>
+            </div>
+            <div id="plansEditor"></div>
+            <button class="btn btn-success" onclick="confirmPlans()" style="width: 100%; margin-top: 10px;">✅ 确认修改</button>
+            <button class="btn btn-primary" onclick="addNewPlan()" style="width: 100%; margin-top: 10px;">+ 添加新计划</button>
+            <button class="btn btn-secondary" onclick="closeModal('plansModal')" style="width: 100%; margin-top: 10px;">关闭</button>
+        </div>
+    </div>
+
+    <!-- 历史记录模态框 -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-title">📊 历史记录</div>
+            <div id="historyContent"></div>
+            <button class="btn btn-secondary" onclick="closeModal('historyModal')" style="width: 100%; margin-top: 10px;">关闭</button>
+        </div>
+    </div>
+
+    <!-- 兑换模态框 -->
+    <div class="modal" id="exchangeModal">
+        <div class="modal-content">
+            <div class="modal-title">💱 钻石兑换</div>
+            <div class="exchange-section">
+                <div class="exchange-rate">💎 10 钻石 = 💰 1 元</div>
+                <div class="exchange-input">
+                    <div>
+                        <input type="number" id="exchangeDiamond" placeholder="钻石" oninput="calculateExchange()">
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">钻石</div>
+                    </div>
+                    <div style="font-size: 24px;">➡️</div>
+                    <div>
+                        <input type="text" id="exchangeMoney" readonly placeholder="0">
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">元</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="doExchange()" style="width: 100%;">确认兑换</button>
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('exchangeModal')" style="width: 100%; margin-top: 10px;">关闭</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+
+    <!-- 储蓄工具JavaScript -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script>
+        // 全局变量
+        let transactions = [];
+        let goalData = { name: '平衡车', price: 500, icon: '🎯' };
+        let currentEditId = null;
+        const DATA_VERSION = '4.1';
+        
+        // Initialize Dexie.js database - 使用唯一变量名避免冲突
+        const piggyBankDb = new Dexie('PiggyBankDB');
+        piggyBankDb.version(1).stores({
+            transactions: 'id, type, amount, category, itemName, note, date',
+            goal: 'name, price, icon'
+        });
+
+        // 暴露到 window 供外部调用
+        window.piggyBankDb = piggyBankDb;
+        window.loadSavingsData = loadData;  // 暴露加载函数供 app.js 调用
+
+        const categories = {
+            income: [
+                { id: 'allowance', icon: '🎁', name: '零花钱' },
+                { id: 'reward', icon: '🏆', name: '奖励' },
+                { id: 'gift', icon: '🧧', name: '红包' },
+                { id: 'other_in', icon: '💎', name: '其他' }
+            ],
+            expense: [
+                { id: 'toy', icon: '🧸', name: '玩具' },
+                { id: 'snack', icon: '🍭', name: '零食' },
+                { id: 'book', icon: '📚', name: '书本' },
+                { id: 'game', icon: '🎮', name: '游戏' },
+                { id: 'other_out', icon: '🛍️', name: '其他' }
+            ]
+        };
+
+        // 函数定义
+        async function loadData(forceReload = false) {
+            try {
+                // 检查是否需要强制重新加载（从localStorage）
+                const needsReload = localStorage.getItem('piggyBankNeedsReload') === 'true';
+                
+                if (forceReload || needsReload) {
+                    console.log('强制从 localStorage 重新加载储蓄数据...');
+                    const saved = localStorage.getItem('piggyBankTransactions');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        console.log('从 localStorage 读取到', parsed.length, '条记录');
+                        
+                        // 清空并重新写入 IndexedDB
+                        await piggyBankDb.transactions.clear();
+                        if (parsed.length > 0) {
+                            await piggyBankDb.transactions.bulkAdd(parsed);
+                            console.log('数据已重新写入 IndexedDB');
+                        }
+                        transactions = parsed;
+                    } else {
+                        console.log('localStorage 中没有储蓄数据');
+                        transactions = [];
+                    }
+                    // 清除重新加载标志
+                    localStorage.removeItem('piggyBankNeedsReload');
+                    return;
+                }
+
+                // Check if data exists in IndexedDB
+                const count = await piggyBankDb.transactions.count();
+
+                if (count === 0) {
+                    // No data in IndexedDB, try to migrate from localStorage
+                    const saved = localStorage.getItem('piggyBankTransactions');
+                    const version = localStorage.getItem('piggyBankDataVersion');
+
+                    if (saved) {
+                        let parsed = JSON.parse(saved);
+
+                        if (!version || version !== DATA_VERSION) {
+                            parsed = parsed.map(t => ({
+                                id: t.id || Date.now(),
+                                type: t.type || 'expense',
+                                price: t.price || (t.amount && t.quantity ? t.amount / t.quantity : t.amount) || 0,
+                                quantity: t.quantity || 1,
+                                amount: t.amount || (t.price * t.quantity) || 0,
+                                category: t.category || (t.type === 'income' ? 'allowance' : 'other_out'),
+                                itemName: t.itemName || (t.type === 'expense' ? '-' : '收入'),
+                                note: t.note || '',
+                                date: t.date || new Date().toISOString()
+                            }));
+                        }
+
+                        // Save to IndexedDB
+                        if (parsed.length > 0) {
+                            await piggyBankDb.transactions.bulkAdd(parsed);
+                            console.log('Data migrated from localStorage to IndexedDB');
+                            // Clear localStorage after migration
+                            localStorage.removeItem('piggyBankTransactions');
+                            localStorage.removeItem('piggyBankDataVersion');
+                        }
+
+                        transactions = parsed;
+                    }
+                } else {
+                    // Data exists in IndexedDB, load from there
+                    transactions = await piggyBankDb.transactions.toArray();
+                }
+                
+                // Load goal data
+                const savedGoal = await piggyBankDb.goal.get('goal');
+                if (savedGoal) {
+                    goalData = savedGoal;
+                } else {
+                    // Try to load from localStorage if not in IndexedDB
+                    const localGoal = localStorage.getItem('piggyBankGoal');
+                    if (localGoal) {
+                        goalData = JSON.parse(localGoal);
+                        // Save to IndexedDB
+                        await piggyBankDb.goal.put({ ...goalData, name: 'goal' });
+                        // Clear localStorage after migration
+                        localStorage.removeItem('piggyBankGoal');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Fallback to localStorage if IndexedDB fails
+                const saved = localStorage.getItem('piggyBankTransactions');
+                if (saved) {
+                    transactions = JSON.parse(saved);
+                }
+                const savedGoal = localStorage.getItem('piggyBankGoal');
+                if (savedGoal) {
+                    goalData = JSON.parse(savedGoal);
+                }
+            }
+
+            // 数据加载完成后更新UI
+            await updateSavingsUI();
+        };
+
+        async function saveTransactions() {
+            try {
+                // Clear existing transactions and add new ones
+                await piggyBankDb.transactions.clear();
+                if (transactions.length > 0) {
+                    await piggyBankDb.transactions.bulkAdd(transactions);
+                }
+            } catch (error) {
+                console.error('Error saving transactions:', error);
+                // Fallback to localStorage
+                localStorage.setItem('piggyBankTransactions', JSON.stringify(transactions));
+            }
+        };
+
+        async function saveGoal() {
+            try {
+                await piggyBankDb.goal.put({ ...goalData, name: 'goal' });
+            } catch (error) {
+                console.error('Error saving goal:', error);
+                // Fallback to localStorage
+                localStorage.setItem('piggyBankGoal', JSON.stringify(goalData));
+            }
+        };
+
+        function setupEventListeners() {
+            const priceInput = document.getElementById('price');
+            const quantityInput = document.getElementById('quantity');
+            const transactionForm = document.getElementById('transactionForm');
+            
+            if (priceInput) priceInput.addEventListener('input', updateTotal);
+            if (quantityInput) quantityInput.addEventListener('input', updateTotal);
+            if (transactionForm) transactionForm.addEventListener('submit', handleSubmit);
+        };
+
+        function toggleInputMode() {
+            const typeRadios = document.querySelectorAll('input[name="type"]');
+            let type = 'income';
+            typeRadios.forEach(radio => {
+                if (radio.checked) type = radio.value;
+            });
+            
+            const incomeInput = document.getElementById('incomeInput');
+            const expenseInput = document.getElementById('expenseInput');
+            const itemNameInput = document.getElementById('itemNameInput');
+            const incomeAmount = document.getElementById('incomeAmount');
+            const price = document.getElementById('price');
+            const quantity = document.getElementById('quantity');
+            const itemName = document.getElementById('itemName');
+            
+            if (incomeInput && expenseInput && itemNameInput) {
+                if (type === 'income') {
+                    // 收入模式
+                    incomeInput.classList.remove('hidden');
+                    expenseInput.classList.add('hidden');
+                    itemNameInput.classList.add('hidden');
+                    
+                    // 设置必填/非必填
+                    if (incomeAmount) incomeAmount.setAttribute('required', 'required');
+                    if (price) price.removeAttribute('required');
+                    if (quantity) quantity.removeAttribute('required');
+                    if (itemName) itemName.removeAttribute('required');
+                } else {
+                    // 支出模式
+                    incomeInput.classList.add('hidden');
+                    expenseInput.classList.remove('hidden');
+                    itemNameInput.classList.remove('hidden');
+                    
+                    // 设置必填
+                    if (incomeAmount) incomeAmount.removeAttribute('required');
+                    if (price) price.setAttribute('required', 'required');
+                    if (quantity) quantity.setAttribute('required', 'required');
+                    if (itemName) itemName.setAttribute('required', 'required');
+                }
+                
+                renderCategories(type);
+                const categoryInput = document.getElementById('category');
+                if (categoryInput) categoryInput.value = categories[type][0].id;
+            }
+        };
+
+        function updateTotal() {
+            const price = document.getElementById('price');
+            const quantity = document.getElementById('quantity');
+            const totalDisplay = document.getElementById('totalDisplay');
+            
+            if (price && quantity && totalDisplay) {
+                const priceValue = parseFloat(price.value) || 0;
+                const quantityValue = parseInt(quantity.value) || 0;
+                const total = priceValue * quantityValue;
+                totalDisplay.textContent = `¥${total.toFixed(2)}`;
+            }
+        };
+
+        function renderCategories(type) {
+            const container = document.getElementById('categoryContainer');
+            if (!container) return;
+            
+            const cats = categories[type];
+            
+            container.innerHTML = cats.map((cat, index) => `
+                <div class="emoji-btn ${index === 0 ? 'selected border-indigo-500' : 'border-transparent'} 
+                            flex flex-col items-center p-2 rounded-xl bg-gray-50 border-2" 
+                     onclick="selectCategory('${cat.id}', this)">
+                    <span class="text-2xl mb-1">${cat.icon}</span>
+                    <span class="text-xs font-bold text-gray-600">${cat.name}</span>
+                </div>
+            `).join('');
+            
+            const categoryInput = document.getElementById('category');
+            if (categoryInput) categoryInput.value = cats[0].id;
+        };
+
+        function selectCategory(id, element) {
+            const categoryInput = document.getElementById('category');
+            if (categoryInput) categoryInput.value = id;
+            
+            const emojiBtns = document.querySelectorAll('.emoji-btn');
+            emojiBtns.forEach(btn => {
+                btn.classList.remove('selected', 'border-indigo-500');
+                btn.classList.add('border-transparent');
+            });
+            if (element) {
+                element.classList.add('selected', 'border-indigo-500');
+                element.classList.remove('border-transparent');
+            }
+        };
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            const typeRadios = document.querySelectorAll('input[name="type"]');
+            let type = 'income';
+            typeRadios.forEach(radio => {
+                if (radio.checked) type = radio.value;
+            });
+            
+            const category = document.getElementById('category').value;
+            const note = document.getElementById('note').value;
+            
+            let price, quantity, amount, itemName;
+
+            if (type === 'income') {
+                // 收入处理
+                const incomeAmount = document.getElementById('incomeAmount');
+                amount = parseFloat(incomeAmount.value) || 0;
+                
+                if (amount <= 0) {
+                    alert('请输入正确的收入金额！');
+                    return;
+                }
+                
+                price = amount;
+                quantity = 1;
+                itemName = '收入';
+            } else {
+                // 支出处理
+                const itemNameInput = document.getElementById('itemName');
+                const priceInput = document.getElementById('price');
+                const quantityInput = document.getElementById('quantity');
+                
+                itemName = itemNameInput.value.trim();
+                price = parseFloat(priceInput.value) || 0;
+                quantity = parseInt(quantityInput.value) || 0;
+                amount = price * quantity;
+                
+                if (!itemName) {
+                    alert('请输入物品名称！');
+                    return;
+                }
+                if (price <= 0 || quantity <= 0) {
+                    alert('请输入正确的单价和数量！');
+                    return;
+                }
+            }
+
+            const transaction = {
+                id: Date.now(),
+                type,
+                price,
+                quantity,
+                amount,
+                category,
+                itemName,
+                note,
+                date: new Date().toISOString()
+            };
+
+            transactions.unshift(transaction);
+            await saveTransactions();
+            await updateSavingsUI();
+            if (typeof window.updateUI === 'function') window.updateUI();
+            
+            // Reset form
+            const incomeAmount = document.getElementById('incomeAmount');
+            const itemNameInput = document.getElementById('itemName');
+            const priceInput = document.getElementById('price');
+            const quantityInput = document.getElementById('quantity');
+            const noteInput = document.getElementById('note');
+            
+            if (incomeAmount) incomeAmount.value = '';
+            if (itemNameInput) itemNameInput.value = '';
+            if (priceInput) priceInput.value = '';
+            if (quantityInput) quantityInput.value = '1';
+            if (noteInput) noteInput.value = '';
+            updateTotal();
+            
+            // Visual feedback
+            if (type === 'income') {
+                createConfetti();
+                const piggyBank = document.querySelector('.piggy-bank');
+                if (piggyBank) {
+                    piggyBank.classList.add('shake');
+                    setTimeout(() => piggyBank.classList.remove('shake'), 500);
+                }
+            }
+            
+            alert('记账成功！');
+        };
+
+        async function deleteTransaction(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                transactions = transactions.filter(t => t.id !== id);
+                await saveTransactions();
+                await updateSavingsUI();
+                if (typeof window.updateUI === 'function') window.updateUI();
+            }
+        };
+
+        async function clearAll() {
+            if (transactions.length === 0) {
+                alert('没有记录可清空');
+                return;
+            }
+            if (confirm('确定要清空所有记录吗？此操作不可恢复！')) {
+                transactions = [];
+                await saveTransactions();
+                await updateSavingsUI();
+                if (typeof window.updateUI === 'function') window.updateUI();
+                alert('已清空所有记录');
+            }
+        };
+
+        // Edit Item Name
+        function openEditItemModal(id) {
+            const t = transactions.find(tr => tr.id === id);
+            if (!t) return;
+            
+            currentEditId = id;
+            const editItemNameInput = document.getElementById('editItemNameInput');
+            const editItemModal = document.getElementById('editItemModal');
+            
+            if (editItemNameInput) editItemNameInput.value = t.itemName || '';
+            if (editItemModal) editItemModal.classList.add('show');
+        };
+
+        function closeEditItemModal() {
+            const editItemModal = document.getElementById('editItemModal');
+            if (editItemModal) editItemModal.classList.remove('show');
+            currentEditId = null;
+        };
+
+        async function saveItemName() {
+            if (!currentEditId) return;
+            
+            const editItemNameInput = document.getElementById('editItemNameInput');
+            if (!editItemNameInput) return;
+            
+            const newName = editItemNameInput.value.trim();
+            if (!newName) {
+                alert('物品名称不能为空！');
+                return;
+            }
+            
+            const t = transactions.find(tr => tr.id === currentEditId);
+            if (t) {
+                t.itemName = newName;
+                await saveTransactions();
+                await updateSavingsUI();
+                if (typeof window.updateUI === 'function') window.updateUI();
+                closeEditItemModal();
+                alert('修改成功！');
+            }
+        };
+
+        // Goal Functions
+        function openGoalModal() {
+            const editGoalName = document.getElementById('editGoalName');
+            const editGoalPrice = document.getElementById('editGoalPrice');
+            const goalModal = document.getElementById('goalModal');
+            
+            if (editGoalName) editGoalName.value = goalData.name;
+            if (editGoalPrice) editGoalPrice.value = goalData.price;
+            if (goalModal) goalModal.classList.add('show');
+        };
+
+        function closeGoalModal() {
+            const goalModal = document.getElementById('goalModal');
+            if (goalModal) goalModal.classList.remove('show');
+        };
+
+        async function saveGoalData() {
+            const editGoalName = document.getElementById('editGoalName');
+            const editGoalPrice = document.getElementById('editGoalPrice');
+            
+            if (!editGoalName || !editGoalPrice) return;
+            
+            const name = editGoalName.value.trim();
+            const price = parseFloat(editGoalPrice.value);
+            
+            if (!name || !price || price <= 0) {
+                alert('请输入有效的目标名称和价格！');
+                return;
+            }
+            
+            goalData = { ...goalData, name, price };
+            await saveGoal();
+            updateGoalDisplay();
+            closeGoalModal();
+        };
+
+        // Navigation
+        function switchPage(page) {
+            const navBtns = document.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${page}'`)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.classList.remove('active'));
+            const targetPage = document.getElementById(`page-${page}`);
+            if (targetPage) targetPage.classList.add('active');
+            
+            if (page === 'week') updateWeekView();
+            if (page === 'month') updateMonthView();
+        };
+
+        // List View Switching
+        function switchListView(view) {
+            const subNavBtns = document.querySelectorAll('.sub-nav-btn');
+            subNavBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.includes(view === 'all' ? '全部' : view === 'income' ? '收入' : '支出')) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            const listViews = document.querySelectorAll('.list-view');
+            listViews.forEach(v => v.classList.add('hidden'));
+            const targetView = document.getElementById(`list-${view}`);
+            if (targetView) targetView.classList.remove('hidden');
+            
+            if (view === 'income') renderIncomeTable();
+            if (view === 'expense') renderExpenseTable();
+        };
+
+        // Week View
+        function updateWeekView() {
+            const tbody = document.getElementById('weekTableBody');
+            const emptyDiv = document.getElementById('weekEmpty');
+            
+            if (!tbody || !emptyDiv) return;
+            
+            const weekMap = new Map();
+            
+            transactions.forEach(t => {
+                const date = new Date(t.date);
+                const weekKey = getWeekKey(date);
+                
+                if (!weekMap.has(weekKey)) {
+                    weekMap.set(weekKey, {
+                        start: getWeekStart(date),
+                        end: getWeekEnd(date),
+                        income: 0,
+                        expense: 0
+                    });
+                }
+                
+                const week = weekMap.get(weekKey);
+                if (t.type === 'income') week.income += t.amount;
+                else week.expense += t.amount;
+            });
+            
+            const sortedWeeks = Array.from(weekMap.entries())
+                .sort((a, b) => b[0].localeCompare(a[0]))
+                .slice(0, 10);
+            
+            if (sortedWeeks.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+            
+            emptyDiv.classList.add('hidden');
+            tbody.innerHTML = sortedWeeks.map(([key, week]) => {
+                const startStr = `${week.start.getFullYear()}/${String(week.start.getMonth() + 1).padStart(2, '0')}/${String(week.start.getDate()).padStart(2, '0')}`;
+                const endStr = `${week.end.getFullYear()}/${String(week.end.getMonth() + 1).padStart(2, '0')}/${String(week.end.getDate()).padStart(2, '0')}`;
+                const balance = week.income - week.expense;
+                
+                return `
+                    <tr>
+                        <td class="font-medium">${startStr}-${endStr}</td>
+                        <td class="text-right text-green-600 font-bold">¥${week.income.toFixed(2)}</td>
+                        <td class="text-right text-red-600 font-bold">¥${week.expense.toFixed(2)}</td>
+                        <td class="text-right font-bold ${balance >= 0 ? 'text-indigo-600' : 'text-red-600'}">¥${balance.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getWeekKey(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            d.setDate(diff);
+            return d.toISOString().split('T')[0];
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            d.setDate(diff);
+            return d;
+        }
+
+        function getWeekEnd(date) {
+            const start = getWeekStart(date);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 6);
+            return end;
+        }
+
+        // Month View
+        function updateMonthView() {
+            const tbody = document.getElementById('monthTableBody');
+            const emptyDiv = document.getElementById('monthEmpty');
+            
+            if (!tbody || !emptyDiv) return;
+            
+            const monthMap = new Map();
+            
+            transactions.forEach(t => {
+                const date = new Date(t.date);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (!monthMap.has(monthKey)) {
+                    monthMap.set(monthKey, {
+                        year: date.getFullYear(),
+                        month: date.getMonth() + 1,
+                        income: 0,
+                        expense: 0
+                    });
+                }
+                
+                const month = monthMap.get(monthKey);
+                if (t.type === 'income') month.income += t.amount;
+                else month.expense += t.amount;
+            });
+            
+            const sortedMonths = Array.from(monthMap.entries())
+                .sort((a, b) => b[0].localeCompare(a[0]))
+                .slice(0, 6);
+            
+            if (sortedMonths.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+            
+            emptyDiv.classList.add('hidden');
+            tbody.innerHTML = sortedMonths.map(([key, month]) => {
+                const balance = month.income - month.expense;
+                
+                return `
+                    <tr>
+                        <td class="font-medium">${month.year}年${month.month}月</td>
+                        <td class="text-right text-green-600 font-bold">¥${month.income.toFixed(2)}</td>
+                        <td class="text-right text-red-600 font-bold">¥${month.expense.toFixed(2)}</td>
+                        <td class="text-right font-bold ${balance >= 0 ? 'text-indigo-600' : 'text-red-600'}">¥${balance.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Render Functions
+        function renderIncomeTable() {
+            const tbody = document.getElementById('incomeTableBody');
+            const emptyDiv = document.getElementById('incomeEmpty');
+            
+            if (!tbody || !emptyDiv) return;
+            
+            const incomeTrans = transactions.filter(t => t.type === 'income');
+            
+            if (incomeTrans.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+            
+            emptyDiv.classList.add('hidden');
+            tbody.innerHTML = incomeTrans.map(t => {
+                const cat = categories.income.find(c => c.id === t.category) || { icon: '💰', name: '未知' };
+                const dateStr = formatDate(t.date);
+                
+                return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${cat.icon} ${cat.name}</td>
+                        <td class="text-right text-green-600 font-bold">¥${t.amount.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button onclick="deleteTransaction(${t.id})" class="text-red-400 hover:text-red-600 text-lg">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderExpenseTable() {
+            const tbody = document.getElementById('expenseTableBody');
+            const emptyDiv = document.getElementById('expenseEmpty');
+            
+            if (!tbody || !emptyDiv) return;
+            
+            const expenseTrans = transactions.filter(t => t.type === 'expense');
+            
+            if (expenseTrans.length === 0) {
+                tbody.innerHTML = '';
+                emptyDiv.classList.remove('hidden');
+                return;
+            }
+            
+            emptyDiv.classList.add('hidden');
+            tbody.innerHTML = expenseTrans.map(t => {
+                const cat = categories.expense.find(c => c.id === t.category) || { icon: '💰', name: '未知' };
+                const dateStr = formatDate(t.date);
+                const itemName = t.itemName || '-';
+                const canEdit = itemName === '-' || !t.itemName;
+                
+                return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${cat.icon} ${cat.name}</td>
+                        <td>
+                            ${canEdit ? 
+                                `<span class="text-gray-400 cursor-pointer edit-btn" onclick="openEditItemModal(${t.id})">${itemName} ✏️</span>` :
+                                `<span onclick="openEditItemModal(${t.id})" class="cursor-pointer edit-btn">${itemName} ✏️</span>`
+                            }
+                        </td>
+                        <td class="text-right">¥${t.price.toFixed(2)}</td>
+                        <td class="text-right">${t.quantity}</td>
+                        <td class="text-right text-red-600 font-bold">¥${t.amount.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button onclick="deleteTransaction(${t.id})" class="text-red-400 hover:text-red-600 text-lg">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        };
+
+        async function updateSavingsUI() {
+            // 从 IndexedDB 重新加载数据，确保显示最新数据
+            try {
+                transactions = await piggyBankDb.transactions.toArray();
+            } catch (e) {
+                console.error('从 IndexedDB 加载数据失败:', e);
+            }
+
+            updateBalance();
+            updateTransactionList();
+            updateGoalDisplay();
+        };
+
+        function updateBalance() {
+            const totalBalance = document.getElementById('totalBalance');
+            const totalIncome = document.getElementById('totalIncome');
+            const totalExpense = document.getElementById('totalExpense');
+            
+            if (!totalBalance || !totalIncome || !totalExpense) return;
+            
+            const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const balance = income - expense;
+            
+            totalBalance.textContent = `¥${balance.toFixed(2)}`;
+            totalIncome.textContent = income.toFixed(2);
+            totalExpense.textContent = expense.toFixed(2);
+            
+            // Save balance to localStorage for data mismatch detection
+            localStorage.setItem('piggyBankBalance', balance.toString());
+        };
+
+        function updateTransactionList() {
+            const transactionList = document.getElementById('transactionList');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (!transactionList || !emptyState) return;
+            
+            if (transactions.length === 0) {
+                transactionList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            transactionList.innerHTML = transactions.slice(0, 20).map(t => {
+                const cat = t.type === 'income' 
+                    ? categories.income.find(c => c.id === t.category) || { icon: '💰', name: '未知' }
+                    : categories.expense.find(c => c.id === t.category) || { icon: '💰', name: '未知' };
+                
+                const dateStr = formatDate(t.date);
+                const isIncome = t.type === 'income';
+                
+                return `
+                    <div class="transaction-item glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="text-3xl">${cat.icon}</div>
+                            <div>
+                                <div class="font-bold">${t.itemName || (isIncome ? '收入' : '支出')}</div>
+                                <div class="text-sm text-gray-500">${cat.name} · ${dateStr}</div>
+                                ${t.note ? `<div class="text-xs text-gray-400 mt-1">备注: ${t.note}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}">
+                                ${isIncome ? '+' : '-' }¥${t.amount.toFixed(2)}
+                            </div>
+                            ${!isIncome && t.quantity > 1 ? `<div class="text-xs text-gray-500">${t.quantity}个</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        function updateGoalDisplay() {
+            const goalName = document.getElementById('goalName');
+            const goalPrice = document.getElementById('goalPrice');
+            const goalProgress = document.getElementById('goalProgress');
+            const goalIcon = document.getElementById('goalIcon');
+            
+            if (!goalName || !goalPrice || !goalProgress) return;
+            
+            goalName.textContent = goalData.name;
+            goalPrice.textContent = goalData.price;
+            if (goalIcon) goalIcon.textContent = goalData.icon || '🎯';
+            
+            const balance = calculateBalance();
+            const progress = Math.floor((balance / goalData.price) * 20);
+            goalProgress.textContent = `已可购买 ${progress}/20 个`;
+        };
+
+        // CSV Export
+        function exportCSV() {
+            if (transactions.length === 0) {
+                alert('没有记录可导出');
+                return;
+            }
+            
+            let csvContent = "日期,类型,分类,物品,单价,数量,金额,备注\n";
+            
+            transactions.forEach(t => {
+                const dateStr = formatDate(t.date);
+                const category = t.type === 'income' 
+                    ? categories.income.find(c => c.id === t.category)?.name || '未知'
+                    : categories.expense.find(c => c.id === t.category)?.name || '未知';
+                
+                const row = [
+                    dateStr,
+                    t.type === 'income' ? '收入' : '支出',
+                    category,
+                    t.itemName || '',
+                    t.price.toFixed(2),
+                    t.quantity,
+                    t.amount.toFixed(2),
+                    t.note || ''
+                ].map(field => `"${field}"`).join(',');
+                
+                csvContent += row + "\n";
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `小猪记账本_${formatDate(new Date().toISOString())}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // 存储目录句柄的变量
+        let piggyBankExportDirectory = null;
+
+        // JSON Export for Piggy Bank using File System Access API
+        async function exportPiggyBankData() {
+            console.log('=== 开始导出储蓄数据 ===');
+            
+            const data = {
+                transactions: transactions,
+                goal: goalData,
+                exportTime: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            // 修复：将日期中的 / 替换为 -，避免文件名包含非法字符
+            const dateStr = formatDate(new Date().toISOString()).replace(/\//g, '-');
+            const fileName = `小猪记账本_${dateStr}.json`;
+            
+            console.log('文件名:', fileName);
+            console.log('piggyBankExportDirectory 当前值:', piggyBankExportDirectory);
+            
+            // 检查浏览器是否支持 File System Access API
+            if (window.showDirectoryPicker) {
+                console.log('浏览器支持 File System Access API');
+                try {
+                    let directoryHandle = piggyBankExportDirectory;
+                    console.log('当前目录句柄:', directoryHandle);
+                    
+                    // 如果没有保存的目录句柄，让用户选择
+                    if (!directoryHandle) {
+                        console.log('没有保存的目录句柄，需要用户选择');
+                        try {
+                            directoryHandle = await window.showDirectoryPicker({
+                                mode: 'readwrite',
+                                startIn: 'documents'
+                            });
+                            console.log('用户选择的目录:', directoryHandle.name);
+                            piggyBankExportDirectory = directoryHandle;
+                            console.log('目录句柄已保存');
+                        } catch (dirError) {
+                            console.log('用户取消选择目录:', dirError.message);
+                            fallbackDownload(blob, fileName);
+                            return;
+                        }
+                    } else {
+                        console.log('使用已保存的目录句柄:', directoryHandle.name);
+                    }
+                    
+                    // 在目录中创建或覆盖文件
+                    console.log('准备创建文件...');
+                    let fileHandle;
+                    try {
+                        fileHandle = await directoryHandle.getFileHandle(fileName);
+                        console.log('文件已存在，准备覆盖');
+                    } catch (e) {
+                        console.log('文件不存在，创建新文件');
+                        fileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
+                    }
+                    
+                    console.log('文件句柄:', fileHandle);
+                    
+                    // 写入文件
+                    console.log('开始写入文件...');
+                    const writable = await fileHandle.createWritable({ keepExistingData: false });
+                    await writable.write(blob);
+                    await writable.close();
+                    console.log('文件写入完成');
+                    
+                    // 验证文件是否创建成功
+                    try {
+                        const savedFile = await fileHandle.getFile();
+                        console.log('文件保存成功:');
+                        console.log('  - 文件名:', savedFile.name);
+                        console.log('  - 文件大小:', savedFile.size, 'bytes');
+                        console.log('  - 最后修改:', new Date(savedFile.lastModified).toLocaleString());
+                        alert(`导出成功！\n文件: ${savedFile.name}\n大小: ${savedFile.size} bytes`);
+                    } catch (verifyError) {
+                        console.log('文件验证失败:', verifyError);
+                        alert('导出完成，但无法验证文件');
+                    }
+                } catch (error) {
+                    console.error('导出过程出错:', error);
+                    console.error('错误名称:', error.name);
+                    console.error('错误信息:', error.message);
+                    
+                    // 检查是否是权限错误或句柄无效
+                    if (error.name === 'InvalidStateError' || error.name === 'NotAllowedError') {
+                        console.log('目录句柄无效，重置并重新选择');
+                        piggyBankExportDirectory = null;
+                        alert('保存位置权限已失效，请重新选择');
+                        exportPiggyBankData();
+                        return;
+                    }
+                    
+                    // 其他错误，使用普通下载
+                    console.log('使用普通下载:', error.message);
+                    fallbackDownload(blob, fileName);
+                }
+            } else {
+                console.log('浏览器不支持 File System Access API，使用普通下载');
+                fallbackDownload(blob, fileName);
+            }
+        }
+
+        // 普通下载回退方案
+        function fallbackDownload(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // JSON Import for Piggy Bank
+        function importPiggyBankData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    // 验证数据格式
+                    if (!data.transactions || !Array.isArray(data.transactions)) {
+                        alert('导入失败：文件格式不正确，缺少 transactions 字段');
+                        return;
+                    }
+                    
+                    // 导入交易记录
+                    transactions = data.transactions;
+                    await saveTransactions();
+                    
+                    // 导入目标数据（如果存在）
+                    if (data.goal) {
+                        goalData = data.goal;
+                        await saveGoal();
+                    }
+                    
+                    // 更新UI
+                    await updateSavingsUI();
+                    if (typeof window.updateUI === 'function') window.updateUI();
+                    
+                    alert(`数据导入成功！共导入 ${transactions.length} 条记录`);
+                } catch (error) {
+                    console.error('导入错误:', error);
+                    alert('导入失败: ' + error.message);
+                } finally {
+                    input.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // JSON Import (旧函数，保留兼容性)
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    if (data.transactions && Array.isArray(data.transactions)) {
+                        transactions = data.transactions;
+                        await saveTransactions();
+                    }
+                    
+                    if (data.goal) {
+                        goalData = data.goal;
+                        await saveGoal();
+                    }
+                    
+                    await updateSavingsUI();
+                    if (typeof window.updateUI === 'function') window.updateUI();
+                    alert('数据导入成功！');
+                } catch (error) {
+                    alert('导入失败: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        };
+
+        // CSV Import
+        function handleCSVFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const csvContent = event.target.result;
+                    const lines = csvContent.split('\n');
+                    const newTransactions = [];
+                    
+                    // Skip header
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = line.split('"').filter(val => val.trim() && val !== ',');
+                        if (values.length < 7) continue;
+                        
+                        const [date, type, category, itemName, price, quantity, amount, note] = values;
+                        
+                        // Find category id
+                        let categoryId = 'other_in';
+                        if (type === '收入') {
+                            const cat = categories.income.find(c => c.name === category);
+                            categoryId = cat ? cat.id : 'other_in';
+                        } else {
+                            const cat = categories.expense.find(c => c.name === category);
+                            categoryId = cat ? cat.id : 'other_out';
+                        }
+                        
+                        newTransactions.push({
+                            id: Date.now() + i,
+                            type: type === '收入' ? 'income' : 'expense',
+                            price: parseFloat(price),
+                            quantity: parseInt(quantity),
+                            amount: parseFloat(amount),
+                            category: categoryId,
+                            itemName: itemName || (type === '收入' ? '收入' : '支出'),
+                            note: note || '',
+                            date: new Date(date.replace(/\//g, '-')).toISOString()
+                        });
+                    }
+                    
+                    if (newTransactions.length > 0) {
+                        transactions = [...newTransactions, ...transactions];
+                        await saveTransactions();
+                        await updateSavingsUI();
+                        if (typeof window.updateUI === 'function') window.updateUI();
+                        alert(`成功导入 ${newTransactions.length} 条记录！`);
+                    } else {
+                        alert('未找到有效的记录');
+                    }
+                } catch (error) {
+                    alert('导入失败: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        };
+
+        // Create Confetti
+        function createConfetti() {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        };
+
+        // 页面加载完成后自动刷新一次（解决初次加载显示不全问题）
+        (function autoRefreshOnFirstLoad() {
+            if (!sessionStorage.getItem('pageRefreshed')) {
+                sessionStorage.setItem('pageRefreshed', 'true');
+                window.location.reload();
+            }
+        })();
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadData();
+            renderCategories('income');
+            await updateSavingsUI();
+            if (typeof window.updateUI === 'function') window.updateUI();
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>
