@@ -1339,13 +1339,37 @@ function validateData(data) {
         return false;
     }
 
-    // 检查必要字段（允许使用"储蓄"替代"money"）
-    const requiredFields = ['goals', 'plans', 'checkins', 'streaks', 'diamonds'];
-    for (const field of requiredFields) {
-        if (!(field in data)) {
-            console.warn(`数据缺少必要字段: ${field}`);
+    // 检查新数据结构：必须有 liuliu 和 parents
+    if (!data.liuliu || !data.parents) {
+        console.warn('数据缺少必要字段: liuliu 或 parents');
+        return false;
+    }
+
+    // 检查 liuliu 和 parents 内部结构
+    for (const user of ['liuliu', 'parents']) {
+        const userData = data[user];
+        if (!userData || typeof userData !== 'object') {
+            console.warn(`数据 ${user} 格式不正确`);
             return false;
         }
+        const userFields = ['plans', 'checkins', 'streaks'];
+        for (const field of userFields) {
+            if (!(field in userData)) {
+                console.warn(`数据 ${user} 缺少必要字段: ${field}`);
+                return false;
+            }
+        }
+    }
+
+    // 检查共享字段
+    if (!('goals' in data)) {
+        console.warn('数据缺少必要字段: goals');
+        return false;
+    }
+
+    if (typeof data.diamonds !== 'number') {
+        console.warn('数据 diamonds 字段格式不正确');
+        return false;
     }
 
     // 检查是否有 money 或 储蓄 字段
