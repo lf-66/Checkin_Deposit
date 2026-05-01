@@ -590,11 +590,18 @@ function importData(input) {
         try {
             let data = JSON.parse(event.target.result);
 
+            // 排除可能的 id 字段（来自 IndexedDB 的数据结构）
+            if (data.id) {
+                console.log('importData: 排除 id 字段:', data.id);
+                const { id, ...cleanData } = data;
+                data = cleanData;
+            }
+
             // 验证数据结构
             if (typeof data === 'object') {
                 // 数据迁移：将旧版数据转换为新版结构
                 data = migrateData(data);
-                console.log('迁移后的数据:', data);
+                console.log('迁移后的数据键:', Object.keys(data));
 
                 // 加载打卡数据（六六和爸爸妈妈）
                 if (data.liuliu) {
@@ -1340,6 +1347,13 @@ async function loadFromLocalStorage() {
     }
     
     if (data) {
+        // 排除 IndexedDB 的 id 字段
+        if (data.id) {
+            console.log('loadFromLocalStorage: 排除 id 字段:', data.id);
+            const { id, ...cleanData } = data;
+            data = cleanData;
+        }
+
         // 数据迁移：将旧版数据转换为新版结构
         data = migrateData(data);
 
@@ -1347,6 +1361,7 @@ async function loadFromLocalStorage() {
         if (data.liuliu) {
             appState.liuliu = data.liuliu;
             appState.parents = data.parents;
+            console.log('loadFromLocalStorage: 打卡数据已加载');
         }
         appState.goals = data.goals || [];
         appState.diamonds = data.diamonds || 0;
@@ -1383,6 +1398,12 @@ function validateData(data) {
     if (!data || typeof data !== 'object') {
         console.warn('validateData: 数据为空或不是对象');
         return false;
+    }
+
+    // 排除可能的 id 字段（来自 IndexedDB）
+    if (data.id) {
+        const { id, ...cleanData } = data;
+        data = cleanData;
     }
 
     console.log('validateData 检查数据键:', Object.keys(data));
