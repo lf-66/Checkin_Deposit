@@ -576,12 +576,31 @@ function importData(input) {
             if (typeof data === 'object') {
                 // 数据迁移：将旧版数据转换为新版结构
                 data = migrateData(data);
+                console.log('迁移后的数据:', data);
 
-                // 加载迁移后的数据
+                // 加载打卡数据（六六和爸爸妈妈）
                 if (data.liuliu) {
                     appState.liuliu = data.liuliu;
-                    appState.parents = data.parents;
+                    console.log('六六打卡数据已加载:', appState.liuliu);
                 }
+                if (data.parents) {
+                    appState.parents = data.parents;
+                    console.log('爸爸妈妈打卡数据已加载:', appState.parents);
+                }
+                // 如果缺少 parents 数据，初始化默认值
+                if (!appState.parents) {
+                    appState.parents = {
+                        plans: [
+                            { id: 'p1', name: '早起', content: '早上7点前起床', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                            { id: 'p2', name: '阅读', content: '每日阅读30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                            { id: 'p3', name: '运动', content: '每日运动30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } }
+                        ],
+                        checkins: {},
+                        streaks: {}
+                    };
+                    console.log('爸爸妈妈数据已初始化默认值');
+                }
+
                 appState.goals = data.goals || [];
                 appState.diamonds = data.diamonds || 0;
                 appState.money = data.money || 0;
@@ -624,8 +643,16 @@ function importData(input) {
                     console.log('未找到储蓄数据字段');
                 }
 
+                console.log('准备保存数据...');
                 await saveData();
+                console.log('数据已保存到 IndexedDB');
+
+                console.log('准备更新UI...');
                 updateUI();
+                // 强制刷新打卡列表
+                updateCheckinList('liuliu');
+                updateCheckinList('parents');
+                console.log('UI已更新');
 
                 // 方法3: 尝试调用储蓄模块的加载函数
                 console.log('window.loadSavingsData 状态:', typeof window.loadSavingsData);
