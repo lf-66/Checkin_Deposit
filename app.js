@@ -409,10 +409,6 @@ async function exportData() {
         // 新的数据结构
         liuliu: appState.liuliu,
         parents: appState.parents,
-        // 兼容旧版本的数据字段
-        plans: appState.liuliu.plans,
-        checkins: appState.liuliu.checkins,
-        streaks: appState.liuliu.streaks,
         // 共享数据
         goals: appState.goals,
         diamonds: appState.diamonds,
@@ -1370,10 +1366,6 @@ async function saveData() {
         // 新的数据结构
         liuliu: appState.liuliu,
         parents: appState.parents,
-        // 兼容旧版本的数据字段
-        plans: appState.liuliu.plans,
-        checkins: appState.liuliu.checkins,
-        streaks: appState.liuliu.streaks,
         // 共享数据
         goals: appState.goals,
         diamonds: appState.diamonds,
