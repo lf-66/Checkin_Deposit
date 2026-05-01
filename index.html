@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌟 日常打卡小工具</title>
+    <title>🌟 每日打卡与储钱罐工具</title>
     <style>
         * {
             margin: 0;
@@ -630,6 +630,50 @@
             min-width: 400px;
         }
 
+        /* 打卡模块导航栏样式 - 参考储蓄模块 */
+        .checkin-nav-container {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .checkin-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .checkin-nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background: #e9ecef;
+            color: #666;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkin-nav-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .checkin-nav-btn:hover:not(.active) {
+            background: #dee2e6;
+        }
+
+        /* 打卡视图容器 */
+        .checkin-view {
+            display: none;
+        }
+
+        .checkin-view.active {
+            display: block;
+        }
+
         /* 表格容器样式 */
         .extra-rewards-container {
             max-height: 300px;
@@ -1018,7 +1062,7 @@
         <div id="app">
             <!-- 头部 -->
             <div class="header">
-                <h1>🌟 日常打卡小工具</h1>
+                <h1>🌟 每日打卡与储钱罐工具</h1>
             </div>
 
             <!-- 资产栏 -->
@@ -1053,14 +1097,33 @@
                 <div class="main-content">
                     <!-- 打卡区 -->
                     <div class="section checkin-section">
-                        <div class="section-title">
-                            📝 今日打卡
-                            <span class="today-progress" id="todayProgress">5/7</span>
+                        <!-- 打卡模块导航栏 -->
+                        <div class="checkin-nav-container">
+                            <div class="checkin-nav">
+                                <button class="checkin-nav-btn active" onclick="switchCheckinView('liuliu')" id="navLiuliu">
+                                    👧 六六今日打卡
+                                </button>
+                                <button class="checkin-nav-btn" onclick="switchCheckinView('parents')" id="navParents">
+                                    👨‍👩 爸爸妈妈今日打卡
+                                </button>
+                            </div>
                         </div>
-                        <div class="time-hint" id="timeHint">
-                            打卡时段：18:00 - 22:00
+
+                        <!-- 六六打卡视图 -->
+                        <div class="checkin-view active" id="viewLiuliu">
+                            <div class="time-hint" id="liuliuTimeHint">
+                                打卡时段：06:00 - 22:00
+                            </div>
+                            <div class="checkin-list" id="liuliuCheckinList"></div>
                         </div>
-                        <div class="checkin-list" id="checkinList"></div>
+
+                        <!-- 爸爸妈妈打卡视图 -->
+                        <div class="checkin-view" id="viewParents">
+                            <div class="time-hint" id="parentsTimeHint">
+                                打卡时段：06:00 - 22:00
+                            </div>
+                            <div class="checkin-list" id="parentsCheckinList"></div>
+                        </div>
                     </div>
 
                     <!-- 额外奖励模块 -->

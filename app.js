@@ -3,45 +3,77 @@ let appState = {
     directoryHandle: null, // 存储用户选择的目录句柄
     rootDirectoryHandle: null, // 存储程序根目录句柄
     goals: [],
-    plans: [
-        {
-            id: '1',
-            name: '每日运动',
-            content: '蹲起、仰卧起坐、平板撑、深蹲、燕儿飞、单杠',
-            dailyDiamond: 5,
-            streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-        },
-        {
-            id: '2',
-            name: '整理日用品',
-            content: '书桌、书包',
-            dailyDiamond: 5,
-            streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-        },
-        {
-            id: '3',
-            name: '平板使用记录',
-            content: '周一到周四不玩平板',
-            dailyDiamond: 10,
-            streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-        },
-        {
-            id: '4',
-            name: '电视使用记录',
-            content: '周一到周四最多30分钟',
-            dailyDiamond: 10,
-            streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-        },
-        {
-            id: '5',
-            name: '零花钱使用记录',
-            content: '不乱买没用的东西',
-            dailyDiamond: 10,
-            streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-        }
-    ],
-    checkins: {},
-    streaks: {},
+    // 六六的打卡数据
+    liuliu: {
+        plans: [
+            {
+                id: '1',
+                name: '每日运动',
+                content: '蹲起、仰卧起坐、平板撑、深蹲、燕儿飞、单杠',
+                dailyDiamond: 5,
+                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+            },
+            {
+                id: '2',
+                name: '整理日用品',
+                content: '书桌、书包',
+                dailyDiamond: 5,
+                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+            },
+            {
+                id: '3',
+                name: '平板使用记录',
+                content: '周一到周四不玩平板',
+                dailyDiamond: 10,
+                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+            },
+            {
+                id: '4',
+                name: '电视使用记录',
+                content: '周一到周四最多30分钟',
+                dailyDiamond: 10,
+                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+            },
+            {
+                id: '5',
+                name: '零花钱使用记录',
+                content: '不乱买没用的东西',
+                dailyDiamond: 10,
+                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+            }
+        ],
+        checkins: {},
+        streaks: {}
+    },
+    // 爸爸妈妈的打卡数据
+    parents: {
+        plans: [
+            {
+                id: 'p1',
+                name: '早起',
+                content: '早上7点前起床',
+                dailyDiamond: 5,
+                streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 }
+            },
+            {
+                id: 'p2',
+                name: '阅读',
+                content: '每日阅读30分钟',
+                dailyDiamond: 5,
+                streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 }
+            },
+            {
+                id: 'p3',
+                name: '运动',
+                content: '每日运动30分钟',
+                dailyDiamond: 5,
+                streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 }
+            }
+        ],
+        checkins: {},
+        streaks: {}
+    },
+    // 共享数据
     diamonds: 0,
     money: 0,
     exchangeHistory: [],
@@ -55,8 +87,51 @@ let appState = {
     historyRecords: []
 };
 
+// 当前激活的打卡视图
+let currentCheckinView = 'liuliu';
+
 // 全局变量：跟踪同步状态
 let isSyncing = false;
+
+// 数据迁移：将旧版本数据转换为新版本
+function migrateData(data) {
+    // 如果是旧版数据结构（有 plans 但没有 liuliu），进行迁移
+    if (data.plans && !data.liuliu) {
+        console.log('检测到旧版数据，开始迁移...');
+
+        const newData = {
+            // 迁移六六的数据（原有数据）
+            liuliu: {
+                plans: data.plans || [],
+                checkins: data.checkins || {},
+                streaks: data.streaks || {}
+            },
+            // 初始化爸爸妈妈的数据
+            parents: {
+                plans: [
+                    { id: 'p1', name: '早起', content: '早上7点前起床', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                    { id: 'p2', name: '阅读', content: '每日阅读30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                    { id: 'p3', name: '运动', content: '每日运动30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } }
+                ],
+                checkins: {},
+                streaks: {}
+            },
+            // 保留其他字段
+            goals: data.goals || [],
+            diamonds: data.diamonds || 0,
+            money: data.money || 0,
+            exchangeHistory: data.exchangeHistory || [],
+            settings: data.settings || { checkinCost: 30, lastSync: new Date().toISOString(), pendingSync: 0 },
+            offlineQueue: data.offlineQueue || [],
+            extraRewards: data.extraRewards || [],
+            historyRecords: data.historyRecords || []
+        };
+
+        console.log('数据迁移完成');
+        return newData;
+    }
+    return data;
+}
 
 
 
@@ -183,20 +258,25 @@ async function autoLoadLatestJsonFile() {
             
             // 解析JSON数据
             try {
-                const data = JSON.parse(content);
+                let data = JSON.parse(content);
                 // 加载数据到应用状态
                 if (data) {
+                    // 数据迁移
+                    data = migrateData(data);
+
+                    // 加载迁移后的数据
+                    if (data.liuliu) {
+                        appState.liuliu = data.liuliu;
+                        appState.parents = data.parents;
+                    }
                     appState.goals = data.goals || [];
-                    appState.plans = data.plans || appState.plans;
-                    appState.checkins = data.checkins || {};
-                    appState.streaks = data.streaks || {};
                     appState.diamonds = data.diamonds || 0;
                     appState.money = data.money || 0;
                     appState.exchangeHistory = data.exchangeHistory || [];
                     appState.settings = { ...appState.settings, ...data.settings };
                     appState.extraRewards = data.extraRewards || [];
                     appState.historyRecords = data.historyRecords || [];
-                    
+
                     // 处理储蓄数据（使用 transactions 字段名）
                     if (data.transactions && Array.isArray(data.transactions)) {
                         console.log('自动加载: 找到 transactions 字段，记录数:', data.transactions.length);
@@ -222,6 +302,23 @@ async function autoLoadLatestJsonFile() {
     } catch (error) {
         console.error('自动加载JSON文件失败:', error.message);
     }
+}
+
+// 切换打卡视图
+function switchCheckinView(view) {
+    currentCheckinView = view;
+
+    // 更新导航按钮状态
+    document.querySelectorAll('.checkin-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('nav' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+
+    // 切换视图显示
+    document.querySelectorAll('.checkin-view').forEach(v => {
+        v.classList.remove('active');
+    });
+    document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
 }
 
 // 初始化应用
@@ -307,12 +404,17 @@ function updateMakeupCost(cost) {
 async function exportData() {
     // 计算所有计划的连续天数
     calculateAllStreaks();
-    
+
     const data = {
+        // 新的数据结构
+        liuliu: appState.liuliu,
+        parents: appState.parents,
+        // 兼容旧版本的数据字段
+        plans: appState.liuliu.plans,
+        checkins: appState.liuliu.checkins,
+        streaks: appState.liuliu.streaks,
+        // 共享数据
         goals: appState.goals,
-        plans: appState.plans,
-        checkins: appState.checkins,
-        streaks: appState.streaks,
         diamonds: appState.diamonds,
         exchangeHistory: appState.exchangeHistory,
         settings: appState.settings,
@@ -472,14 +574,19 @@ function importData(input) {
     const reader = new FileReader();
     reader.onload = async (event) => {
         try {
-            const data = JSON.parse(event.target.result);
-            
+            let data = JSON.parse(event.target.result);
+
             // 验证数据结构
             if (typeof data === 'object') {
+                // 数据迁移：将旧版数据转换为新版结构
+                data = migrateData(data);
+
+                // 加载迁移后的数据
+                if (data.liuliu) {
+                    appState.liuliu = data.liuliu;
+                    appState.parents = data.parents;
+                }
                 appState.goals = data.goals || [];
-                appState.plans = data.plans || appState.plans;
-                appState.checkins = data.checkins || {};
-                appState.streaks = data.streaks || {};
                 appState.diamonds = data.diamonds || 0;
                 appState.money = data.money || 0;
                 appState.exchangeHistory = data.exchangeHistory || [];
@@ -616,14 +723,15 @@ function showSettings() {
     settingsModal.classList.add('active');
 }
 
-// 显示计划管理
-function showPlans() {
+// 显示计划管理（默认管理六六的计划）
+function showPlans(user = 'liuliu') {
     const plansModal = document.getElementById('plansModal');
     const plansEditor = document.getElementById('plansEditor');
-    
+
     plansEditor.innerHTML = '';
-    
-    appState.plans.forEach(plan => {
+
+    const userData = appState[user];
+    userData.plans.forEach(plan => {
         const planDiv = document.createElement('div');
         planDiv.className = 'plan-editor';
         planDiv.innerHTML = `
@@ -670,11 +778,12 @@ function showPlans() {
     plansModal.classList.add('active');
 }
 
-// 添加新计划
-function addNewPlan() {
+// 添加新计划（默认添加到六六的计划）
+function addNewPlan(user = 'liuliu') {
     const planName = prompt('请输入计划名称:');
     if (planName && planName.trim()) {
-        appState.plans.push({
+        const userData = appState[user];
+        userData.plans.push({
             id: Date.now().toString(),
             name: planName.trim(),
             content: '',
@@ -682,23 +791,25 @@ function addNewPlan() {
             streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
         });
         saveData();
-        showPlans();
+        showPlans(user);
     }
 }
 
 // 删除计划
-function removePlan(planId) {
+function removePlan(planId, user = 'liuliu') {
     if (confirm('确定要删除这个计划吗？')) {
-        appState.plans = appState.plans.filter(plan => plan.id !== planId);
+        const userData = appState[user];
+        userData.plans = userData.plans.filter(plan => plan.id !== planId);
         saveData();
-        showPlans();
+        showPlans(user);
     }
 }
 
 // 更新计划名称
-function updatePlanName(planId, value) {
+function updatePlanName(planId, value, user = 'liuliu') {
     if (value && value.trim()) {
-        const plan = appState.plans.find(p => p.id === planId);
+        const userData = appState[user];
+        const plan = userData.plans.find(p => p.id === planId);
         if (plan) {
             plan.name = value.trim();
         }
@@ -706,18 +817,20 @@ function updatePlanName(planId, value) {
 }
 
 // 更新计划内容
-function updatePlanContent(planId, value) {
-    const plan = appState.plans.find(p => p.id === planId);
+function updatePlanContent(planId, value, user = 'liuliu') {
+    const userData = appState[user];
+    const plan = userData.plans.find(p => p.id === planId);
     if (plan) {
         plan.content = value.trim();
     }
 }
 
 // 更新计划钻石奖励
-function updatePlanDiamond(planId, value) {
+function updatePlanDiamond(planId, value, user = 'liuliu') {
     const diamond = parseInt(value);
     if (!isNaN(diamond) && diamond > 0) {
-        const plan = appState.plans.find(p => p.id === planId);
+        const userData = appState[user];
+        const plan = userData.plans.find(p => p.id === planId);
         if (plan) {
             plan.dailyDiamond = diamond;
         }
@@ -725,10 +838,11 @@ function updatePlanDiamond(planId, value) {
 }
 
 // 更新计划连续打卡奖励
-function updatePlanStreakReward(planId, days, value) {
+function updatePlanStreakReward(planId, days, value, user = 'liuliu') {
     const reward = parseInt(value);
     if (!isNaN(reward) && reward >= 0) {
-        const plan = appState.plans.find(p => p.id === planId);
+        const userData = appState[user];
+        const plan = userData.plans.find(p => p.id === planId);
         if (plan) {
             if (!plan.streakRewards) {
                 plan.streakRewards = {};
@@ -801,20 +915,32 @@ function showHistory() {
         const isFutureDate = dateStr > today;
         
         if (!isFutureDate) {
-            if (appState.checkins[dateStr]) {
-                const checkins = appState.checkins[dateStr];
-                const completed = Object.values(checkins).filter(Boolean).length;
-                const total = appState.plans.length;
-                
-                if (completed === total) {
+            // 合并两个用户的打卡记录
+            let totalCompleted = 0;
+            let totalPlans = 0;
+            let hasMakeupAny = false;
+
+            ['liuliu', 'parents'].forEach(user => {
+                const userData = appState[user];
+                totalPlans += userData.plans.length;
+                if (userData.checkins[dateStr]) {
+                    const checkins = userData.checkins[dateStr];
+                    totalCompleted += Object.values(checkins).filter(Boolean).length;
+                    if (Object.values(checkins).some(value => value === 'makeup')) {
+                        hasMakeupAny = true;
+                    }
+                }
+            });
+
+            if (totalCompleted > 0) {
+                if (totalCompleted === totalPlans) {
                     dayElement.className = 'calendar-day completed';
                 } else {
                     dayElement.className = 'calendar-day partial';
                 }
-                
+
                 // 检查是否有补卡记录
-                const hasMakeup = Object.values(checkins).some(value => value === 'makeup');
-                if (hasMakeup) {
+                if (hasMakeupAny) {
                     const makeupBadge = document.createElement('div');
                     makeupBadge.className = 'makeup-badge';
                     makeupBadge.textContent = '补卡';
@@ -878,34 +1004,46 @@ function showDateCheckins(dateStr) {
     `;
     
     const dateCheckinList = document.getElementById('dateCheckinList');
-    
-    appState.plans.forEach(plan => {
-        const isChecked = appState.checkins[dateStr]?.[plan.id] || false;
-        
-        const checkinItem = document.createElement('div');
-        checkinItem.className = 'checkin-item';
-        checkinItem.innerHTML = `
-            <div class="checkin-info">
-                <div class="checkin-name">${plan.name}</div>
-                <div class="checkin-reward">+${plan.dailyDiamond}💎</div>
-            </div>
-            <div>
-                ${isChecked ? `
-                    <button class="checkin-btn completed" disabled>
-                        ✓ 已打卡
-                    </button>
-                ` : isPastDate ? `
-                    <button class="checkin-btn active" onclick="handleMakeupCheckinForDate('${dateStr}', '${plan.id}')">
-                        补卡
-                    </button>
-                ` : `
-                    <button class="checkin-btn disabled" disabled>
-                        未来日期
-                    </button>
-                `}
-            </div>
-        `;
-        dateCheckinList.appendChild(checkinItem);
+
+    // 显示两个用户的打卡情况
+    ['liuliu', 'parents'].forEach(user => {
+        const userData = appState[user];
+        const userLabel = user === 'liuliu' ? '👧 六六' : '👨‍👩 爸爸妈妈';
+
+        // 添加用户分隔标题
+        const userHeader = document.createElement('div');
+        userHeader.style.cssText = 'font-weight: bold; margin: 15px 0 10px 0; padding: 8px; background: #f0f0f0; border-radius: 8px;';
+        userHeader.textContent = userLabel;
+        dateCheckinList.appendChild(userHeader);
+
+        userData.plans.forEach(plan => {
+            const isChecked = userData.checkins[dateStr]?.[plan.id] || false;
+
+            const checkinItem = document.createElement('div');
+            checkinItem.className = 'checkin-item';
+            checkinItem.innerHTML = `
+                <div class="checkin-info">
+                    <div class="checkin-name">${plan.name}</div>
+                    <div class="checkin-reward">+${plan.dailyDiamond}💎</div>
+                </div>
+                <div>
+                    ${isChecked ? `
+                        <button class="checkin-btn completed" disabled>
+                            ✓ 已打卡
+                        </button>
+                    ` : isPastDate ? `
+                        <button class="checkin-btn active" onclick="handleMakeupCheckinForDate('${dateStr}', '${plan.id}', '${user}')">
+                            补卡
+                        </button>
+                    ` : `
+                        <button class="checkin-btn disabled" disabled>
+                            未来日期
+                        </button>
+                    `}
+                </div>
+            `;
+            dateCheckinList.appendChild(checkinItem);
+        });
     });
 }
 
@@ -1161,10 +1299,15 @@ async function loadFromLocalStorage() {
     }
     
     if (data) {
+        // 数据迁移：将旧版数据转换为新版结构
+        data = migrateData(data);
+
+        // 加载迁移后的数据
+        if (data.liuliu) {
+            appState.liuliu = data.liuliu;
+            appState.parents = data.parents;
+        }
         appState.goals = data.goals || [];
-        appState.plans = data.plans || appState.plans;
-        appState.checkins = data.checkins || {};
-        appState.streaks = data.streaks || {};
         appState.diamonds = data.diamonds || 0;
         appState.money = data.money || 0;
         appState.exchangeHistory = data.exchangeHistory || [];
@@ -1224,10 +1367,15 @@ async function saveData() {
     calculateAllStreaks();
     
     const data = {
+        // 新的数据结构
+        liuliu: appState.liuliu,
+        parents: appState.parents,
+        // 兼容旧版本的数据字段
+        plans: appState.liuliu.plans,
+        checkins: appState.liuliu.checkins,
+        streaks: appState.liuliu.streaks,
+        // 共享数据
         goals: appState.goals,
-        plans: appState.plans,
-        checkins: appState.checkins,
-        streaks: appState.streaks,
         diamonds: appState.diamonds,
         money: appState.money,
         exchangeHistory: appState.exchangeHistory,
@@ -1283,26 +1431,40 @@ function calculateSavingsBalance() {
 function recalculateTotalDiamonds() {
     let total = 0;
 
-    // 按日期排序，用于计算连续打卡
-    const sortedDates = Object.keys(appState.checkins).sort();
+    // 遍历两个用户的打卡记录
+    ['liuliu', 'parents'].forEach(user => {
+        const userData = appState[user];
 
-    // 1. 计算所有打卡获得的钻石（基础奖励 + 连续打卡奖励）
-    sortedDates.forEach(date => {
-        const planCheckins = appState.checkins[date];
-        Object.entries(planCheckins).forEach(([planId, status]) => {
-            if (status === true || status === 'makeup') {
-                const plan = appState.plans.find(p => p.id === planId);
-                if (plan) {
-                    // 基础奖励
-                    total += plan.dailyDiamond;
+        // 按日期排序，用于计算连续打卡
+        const sortedDates = Object.keys(userData.checkins).sort();
 
-                    // 连续打卡奖励：检查这一天是否是连续打卡的第3/7/15/30天
-                    const streak = calculateStreakUpToDate(planId, date);
-                    if (plan.streakRewards && plan.streakRewards[streak]) {
-                        total += plan.streakRewards[streak];
+        // 1. 计算所有打卡获得的钻石（基础奖励 + 连续打卡奖励）
+        sortedDates.forEach(date => {
+            const planCheckins = userData.checkins[date];
+            Object.entries(planCheckins).forEach(([planId, status]) => {
+                if (status === true || status === 'makeup') {
+                    const plan = userData.plans.find(p => p.id === planId);
+                    if (plan) {
+                        // 基础奖励
+                        total += plan.dailyDiamond;
+
+                        // 连续打卡奖励：检查这一天是否是连续打卡的第3/7/15/30天
+                        const streak = calculateStreakUpToDate(planId, date, user);
+                        if (plan.streakRewards && plan.streakRewards[streak]) {
+                            total += plan.streakRewards[streak];
+                        }
                     }
                 }
-            }
+            });
+        });
+
+        // 3. 减去补卡消耗的钻石
+        Object.entries(userData.checkins).forEach(([date, planCheckins]) => {
+            Object.entries(planCheckins).forEach(([planId, status]) => {
+                if (status === 'makeup') {
+                    total -= appState.settings.checkinCost || 30;
+                }
+            });
         });
     });
 
@@ -1311,27 +1473,19 @@ function recalculateTotalDiamonds() {
         total += reward.diamonds || 0;
     });
 
-    // 3. 减去补卡消耗的钻石
-    Object.entries(appState.checkins).forEach(([date, planCheckins]) => {
-        Object.entries(planCheckins).forEach(([planId, status]) => {
-            if (status === 'makeup') {
-                total -= appState.settings.checkinCost || 30;
-            }
-        });
-    });
-
     appState.diamonds = total;
     return total;
 }
 
 // 计算到指定日期为止的连续打卡天数
-function calculateStreakUpToDate(planId, targetDate) {
+function calculateStreakUpToDate(planId, targetDate, user = 'liuliu') {
     let streak = 0;
-    const sortedDates = Object.keys(appState.checkins).sort();
+    const userData = appState[user];
+    const sortedDates = Object.keys(userData.checkins).sort();
 
     for (const date of sortedDates) {
         if (date > targetDate) break;
-        if (appState.checkins[date]?.[planId]) {
+        if (userData.checkins[date]?.[planId]) {
             streak++;
         } else {
             streak = 0;
@@ -1350,21 +1504,24 @@ function updateUI() {
     const savingsBalance = calculateSavingsBalance();
     document.getElementById('moneyCount').textContent = savingsBalance.toFixed(1);
     
-    // 更新连续打卡天数
+    // 更新连续打卡天数（计算两个用户的最大连续天数）
     const streakCountElement = document.getElementById('streakCount');
     if (streakCountElement) {
-        // 计算最长连续打卡天数
         let maxStreak = 0;
-        Object.values(appState.streaks).forEach(streak => {
-            if (streak > maxStreak) {
-                maxStreak = streak;
-            }
+        ['liuliu', 'parents'].forEach(user => {
+            const userData = appState[user];
+            Object.values(userData.streaks).forEach(streak => {
+                if (streak > maxStreak) {
+                    maxStreak = streak;
+                }
+            });
         });
         streakCountElement.textContent = maxStreak;
     }
-    
-    // 更新打卡列表
-    updateCheckinList();
+
+    // 更新打卡列表（两个用户）
+    updateCheckinList('liuliu');
+    updateCheckinList('parents');
     
     // 更新目标容器
     updateGoalsContainer();
@@ -1868,24 +2025,28 @@ function showGoalsModal() {
 }
 
 // 更新打卡列表
-function updateCheckinList() {
-    const checkinList = document.getElementById('checkinList');
+function updateCheckinList(user) {
+    const checkinList = document.getElementById(user + 'CheckinList');
+    if (!checkinList) return;
+
     checkinList.innerHTML = '';
-    
+
     const today = new Date().toISOString().split('T')[0];
     let completed = 0;
-    
-    appState.plans.forEach(plan => {
-        const isChecked = appState.checkins[today]?.[plan.id] || false;
+
+    const userData = appState[user];
+
+    userData.plans.forEach(plan => {
+        const isChecked = userData.checkins[today]?.[plan.id] || false;
         if (isChecked) completed++;
-        
+
         const checkinItem = document.createElement('div');
         checkinItem.className = 'checkin-item';
-        
+
         const now = new Date();
         const hours = now.getHours();
-        const canCheckin = hours >= 18 && hours < 22;
-        
+        const canCheckin = hours >= 6 && hours < 22;
+
         checkinItem.innerHTML = `
             <div class="checkin-info">
                 <div class="checkin-name">${plan.name}</div>
@@ -1893,19 +2054,22 @@ function updateCheckinList() {
                 <div class="checkin-reward">+${plan.dailyDiamond}💎</div>
             </div>
             <div>
-                <button class="checkin-btn ${isChecked ? 'completed' : 'active'} ${!canCheckin && !isChecked ? 'disabled' : ''}" data-plan-id="${plan.id}" ${!canCheckin && !isChecked ? 'disabled' : ''}>
+                <button class="checkin-btn ${isChecked ? 'completed' : 'active'} ${!canCheckin && !isChecked ? 'disabled' : ''}" data-plan-id="${plan.id}" data-user="${user}" ${!canCheckin && !isChecked ? 'disabled' : ''}>
                     ${isChecked ? '✓ 已打卡' : '打卡'}
                 </button>
             </div>
         `;
         checkinList.appendChild(checkinItem);
     });
-    
-    // 更新计数
-    document.getElementById('todayProgress').textContent = `${completed}/${appState.plans.length}`;
-    
+
+    // 更新计数（使用对应用户的进度元素）
+    const progressElement = document.getElementById(user + 'Progress');
+    if (progressElement) {
+        progressElement.textContent = `${completed}/${userData.plans.length}`;
+    }
+
     // 绑定打卡按钮事件
-    document.querySelectorAll('.checkin-btn').forEach(btn => {
+    checkinList.querySelectorAll('.checkin-btn').forEach(btn => {
         if (!btn.disabled) {
             btn.addEventListener('click', handleCheckin);
         }
@@ -1915,39 +2079,42 @@ function updateCheckinList() {
 // 处理打卡
 function handleCheckin(e) {
     const planId = e.target.dataset.planId;
+    const user = e.target.dataset.user || 'liuliu';
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
     const hours = now.getHours();
 
     // 检查时间
-    if (hours < 18 || hours >= 22) {
-        alert('当前时间不在打卡时间范围内（18:00-22:00）');
+    if (hours < 6 || hours >= 22) {
+        alert('当前时间不在打卡时间范围内（06:00-22:00）');
         return;
     }
 
+    const userData = appState[user];
+
     // 初始化今日打卡记录
-    if (!appState.checkins[today]) {
-        appState.checkins[today] = {};
+    if (!userData.checkins[today]) {
+        userData.checkins[today] = {};
     }
 
     // 检查是否已打卡，已打卡则无法取消
-    const isChecked = appState.checkins[today][planId] || false;
+    const isChecked = userData.checkins[today][planId] || false;
     if (isChecked) {
         alert('今日已完成打卡，无法取消');
         return;
     }
 
     // 执行打卡
-    appState.checkins[today][planId] = true;
+    userData.checkins[today][planId] = true;
 
     // 查找计划
-    const plan = appState.plans.find(p => p.id === planId);
+    const plan = userData.plans.find(p => p.id === planId);
     if (plan) {
         // 发放基础奖励
         appState.diamonds += plan.dailyDiamond;
 
         // 计算连续打卡奖励
-        const streak = calculateStreak(planId);
+        const streak = calculateStreak(planId, user);
         if (plan.streakRewards[streak]) {
             appState.diamonds += plan.streakRewards[streak];
             alert(`恭喜！连续打卡${streak}天，获得额外${plan.streakRewards[streak]}钻石奖励！`);
@@ -1956,10 +2123,10 @@ function handleCheckin(e) {
 
     saveData();
     updateUI();
-    
+
     // 立即更新打卡列表显示，确保状态实时刷新
-    updateCheckinList();
-    
+    updateCheckinList(user);
+
     // 强制更新钻石显示，确保实时刷新
     const diamondCountElement = document.getElementById('diamondCount');
     if (diamondCountElement) {
@@ -1979,72 +2146,78 @@ function handleMakeupCheckin(e) {
 }
 
 // 处理指定日期的补卡
-function handleMakeupCheckinForDate(dateStr, planId) {
+function handleMakeupCheckinForDate(dateStr, planId, user = 'liuliu') {
+    const userData = appState[user];
+
     // 检查是否已经打卡
-    if (appState.checkins[dateStr]?.[planId]) {
+    if (userData.checkins[dateStr]?.[planId]) {
         alert('该日期已经打卡，无需补卡');
         return;
     }
-    
+
     // 检查钻石是否足够
     if (appState.diamonds < appState.settings.checkinCost) {
         alert(`钻石不足，补卡需要${appState.settings.checkinCost}钻石`);
         return;
     }
-    
+
     if (confirm(`确定要花费${appState.settings.checkinCost}钻石进行补卡吗？`)) {
         // 扣除钻石
         appState.diamonds -= appState.settings.checkinCost;
-        
+
         // 初始化打卡记录
-        if (!appState.checkins[dateStr]) {
-            appState.checkins[dateStr] = {};
+        if (!userData.checkins[dateStr]) {
+            userData.checkins[dateStr] = {};
         }
-        
+
         // 标记为补卡
-        appState.checkins[dateStr][planId] = 'makeup';
-        
+        userData.checkins[dateStr][planId] = 'makeup';
+
         // 查找计划
-        const plan = appState.plans.find(p => p.id === planId);
+        const plan = userData.plans.find(p => p.id === planId);
         if (plan) {
             // 发放基础奖励（补卡只获得基础奖励，没有连续打卡奖励）
             appState.diamonds += plan.dailyDiamond;
             alert(`补卡成功！获得${plan.dailyDiamond}钻石基础奖励`);
         }
-        
+
         saveData();
         updateUI();
-        
+
         // 如果在历史记录页面，刷新当前日期的打卡情况
         showDateCheckins(dateStr);
     }
 }
 
 // 计算连续打卡天数
-function calculateStreak(planId) {
+function calculateStreak(planId, user = 'liuliu') {
     let streak = 0;
     const today = new Date();
-    
+    const userData = appState[user];
+
     // 从昨天开始往前计算，不包括今天
     for (let i = 1; i <= 365; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
-        if (appState.checkins[dateStr]?.[planId]) {
+
+        if (userData.checkins[dateStr]?.[planId]) {
             streak++;
         } else {
             break;
         }
     }
-    
+
     return streak;
 }
 
 // 计算所有计划的连续天数
 function calculateAllStreaks() {
-    appState.plans.forEach(plan => {
-        appState.streaks[plan.id] = calculateStreak(plan.id);
+    ['liuliu', 'parents'].forEach(user => {
+        const userData = appState[user];
+        userData.plans.forEach(plan => {
+            userData.streaks[plan.id] = calculateStreak(plan.id, user);
+        });
     });
 }
 
@@ -2076,45 +2249,58 @@ async function resetData() {
     try {
         // 重置appState到默认值
         appState.goals = [];
-        appState.plans = [
-            {
-                id: '1',
-                name: '每日运动',
-                content: '蹲起、仰卧起坐、平板撑、深蹲、燕儿飞、单杠',
-                dailyDiamond: 5,
-                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-            },
-            {
-                id: '2',
-                name: '整理日用品',
-                content: '书桌、书包',
-                dailyDiamond: 5,
-                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-            },
-            {
-                id: '3',
-                name: '平板使用记录',
-                content: '周一到周四不玩平板',
-                dailyDiamond: 10,
-                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-            },
-            {
-                id: '4',
-                name: '电视使用记录',
-                content: '周一到周四最多30分钟',
-                dailyDiamond: 10,
-                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-            },
-            {
-                id: '5',
-                name: '零花钱使用记录',
-                content: '不乱买没用的东西',
-                dailyDiamond: 10,
-                streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
-            }
-        ];
-        appState.checkins = {};
-        appState.streaks = {};
+        // 重置六六的数据
+        appState.liuliu = {
+            plans: [
+                {
+                    id: '1',
+                    name: '每日运动',
+                    content: '蹲起、仰卧起坐、平板撑、深蹲、燕儿飞、单杠',
+                    dailyDiamond: 5,
+                    streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+                },
+                {
+                    id: '2',
+                    name: '整理日用品',
+                    content: '书桌、书包',
+                    dailyDiamond: 5,
+                    streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+                },
+                {
+                    id: '3',
+                    name: '平板使用记录',
+                    content: '周一到周四不玩平板',
+                    dailyDiamond: 10,
+                    streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+                },
+                {
+                    id: '4',
+                    name: '电视使用记录',
+                    content: '周一到周四最多30分钟',
+                    dailyDiamond: 10,
+                    streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+                },
+                {
+                    id: '5',
+                    name: '零花钱使用记录',
+                    content: '不乱买没用的东西',
+                    dailyDiamond: 10,
+                    streakRewards: { 3: 10, 7: 20, 15: 50, 30: 100 }
+                }
+            ],
+            checkins: {},
+            streaks: {}
+        };
+        // 重置爸爸妈妈的数据
+        appState.parents = {
+            plans: [
+                { id: 'p1', name: '早起', content: '早上7点前起床', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                { id: 'p2', name: '阅读', content: '每日阅读30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                { id: 'p3', name: '运动', content: '每日运动30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } }
+            ],
+            checkins: {},
+            streaks: {}
+        };
         appState.diamonds = 0;
         appState.money = 0;
         appState.exchangeHistory = [];
