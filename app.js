@@ -95,6 +95,8 @@ let isSyncing = false;
 
 // 数据迁移：将旧版本数据转换为新版本
 function migrateData(data) {
+    console.log('migrateData 输入数据键:', Object.keys(data));
+
     // 如果是旧版数据结构（有 plans 但没有 liuliu），进行迁移
     if (data.plans && !data.liuliu) {
         console.log('检测到旧版数据，开始迁移...');
@@ -130,6 +132,22 @@ function migrateData(data) {
         console.log('数据迁移完成');
         return newData;
     }
+
+    // 如果是新版数据但缺少 parents，初始化默认值
+    if (data.liuliu && !data.parents) {
+        console.log('检测到新版数据但缺少 parents，初始化默认值...');
+        data.parents = {
+            plans: [
+                { id: 'p1', name: '早起', content: '早上7点前起床', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                { id: 'p2', name: '阅读', content: '每日阅读30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
+                { id: 'p3', name: '运动', content: '每日运动30分钟', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } }
+            ],
+            checkins: {},
+            streaks: {}
+        };
+    }
+
+    console.log('migrateData 输出数据键:', Object.keys(data));
     return data;
 }
 
@@ -580,15 +598,15 @@ function importData(input) {
 
                 // 加载打卡数据（六六和爸爸妈妈）
                 if (data.liuliu) {
-                    appState.liuliu = data.liuliu;
-                    console.log('六六打卡数据已加载:', appState.liuliu);
+                    appState.liuliu = JSON.parse(JSON.stringify(data.liuliu)); // 深拷贝避免引用问题
+                    console.log('六六打卡数据已加载，plans数量:', appState.liuliu.plans.length);
+                    console.log('六六打卡数据已加载，checkins日期数:', Object.keys(appState.liuliu.checkins).length);
                 }
                 if (data.parents) {
-                    appState.parents = data.parents;
-                    console.log('爸爸妈妈打卡数据已加载:', appState.parents);
-                }
-                // 如果缺少 parents 数据，初始化默认值
-                if (!appState.parents) {
+                    appState.parents = JSON.parse(JSON.stringify(data.parents)); // 深拷贝避免引用问题
+                    console.log('爸爸妈妈打卡数据已加载，plans数量:', appState.parents.plans.length);
+                } else {
+                    // 如果缺少 parents 数据，初始化默认值
                     appState.parents = {
                         plans: [
                             { id: 'p1', name: '早起', content: '早上7点前起床', dailyDiamond: 5, streakRewards: { 3: 10, 7: 20, 15: 30, 30: 50 } },
@@ -1363,26 +1381,32 @@ async function loadFromLocalStorage() {
 // 验证数据完整性
 function validateData(data) {
     if (!data || typeof data !== 'object') {
+        console.warn('validateData: 数据为空或不是对象');
         return false;
     }
 
-    // 检查新数据结构：必须有 liuliu 和 parents
-    if (!data.liuliu || !data.parents) {
-        console.warn('数据缺少必要字段: liuliu 或 parents');
+    console.log('validateData 检查数据键:', Object.keys(data));
+
+    // 检查新数据结构：必须有 liuliu
+    if (!data.liuliu) {
+        console.warn('validateData: 数据缺少必要字段: liuliu');
         return false;
     }
 
-    // 检查 liuliu 和 parents 内部结构
-    for (const user of ['liuliu', 'parents']) {
-        const userData = data[user];
-        if (!userData || typeof userData !== 'object') {
-            console.warn(`数据 ${user} 格式不正确`);
+    // 检查 liuliu 内部结构
+    const liuliuFields = ['plans', 'checkins', 'streaks'];
+    for (const field of liuliuFields) {
+        if (!(field in data.liuliu)) {
+            console.warn(`validateData: 数据 liuliu 缺少必要字段: ${field}`);
             return false;
         }
-        const userFields = ['plans', 'checkins', 'streaks'];
-        for (const field of userFields) {
-            if (!(field in userData)) {
-                console.warn(`数据 ${user} 缺少必要字段: ${field}`);
+    }
+
+    // parents 是可选的，但如果存在则检查结构
+    if (data.parents) {
+        for (const field of liuliuFields) {
+            if (!(field in data.parents)) {
+                console.warn(`validateData: 数据 parents 缺少必要字段: ${field}`);
                 return false;
             }
         }
@@ -1390,21 +1414,16 @@ function validateData(data) {
 
     // 检查共享字段
     if (!('goals' in data)) {
-        console.warn('数据缺少必要字段: goals');
+        console.warn('validateData: 数据缺少必要字段: goals');
         return false;
     }
 
     if (typeof data.diamonds !== 'number') {
-        console.warn('数据 diamonds 字段格式不正确');
+        console.warn('validateData: 数据 diamonds 字段格式不正确');
         return false;
     }
 
-    // 检查是否有 money 或 储蓄 字段
-    if (!('money' in data) && !('储蓄' in data)) {
-        console.warn('数据缺少必要字段: money 或 储蓄');
-        return false;
-    }
-
+    console.log('validateData: 数据验证通过');
     return true;
 }
 
