@@ -2458,19 +2458,10 @@ let editingPrizeId = null;
 
 // 显示兑换选择菜单
 function showExchange() {
-    const choice = confirm('💱 兑换功能\n\n点击"确定"进入转盘抽奖\n点击"取消"进入钻石兑换现金');
-    if (choice) {
-        openLotteryModal();
-    } else {
-        openModal('exchangeModal');
-    }
-}
-
-// 打开转盘抽奖模态框
-function openLotteryModal() {
+    // 直接打开合并后的兑换模态框
     updateLotteryUI();
     renderLotteryWheel();
-    openModal('lotteryModal');
+    openModal('exchangeModal');
 }
 
 // 更新转盘抽奖UI
@@ -2802,8 +2793,8 @@ function savePrize() {
     renderPrizeList();
     document.getElementById('prizeForm').style.display = 'none';
     
-    // 如果正在转盘界面，重新渲染转盘
-    if (document.getElementById('lotteryModal').classList.contains('active')) {
+    // 如果正在兑换界面，重新渲染转盘
+    if (document.getElementById('exchangeModal').classList.contains('active')) {
         renderLotteryWheel();
     }
 }
@@ -2822,8 +2813,8 @@ function deletePrize(prizeId) {
     saveData();
     renderPrizeList();
     
-    // 如果正在转盘界面，重新渲染转盘
-    if (document.getElementById('lotteryModal').classList.contains('active')) {
+    // 如果正在兑换界面，重新渲染转盘
+    if (document.getElementById('exchangeModal').classList.contains('active')) {
         renderLotteryWheel();
     }
 }
