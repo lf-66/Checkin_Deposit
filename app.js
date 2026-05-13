@@ -84,7 +84,20 @@ let appState = {
     },
     offlineQueue: [],
     extraRewards: [],
-    historyRecords: []
+    historyRecords: [],
+    // 转盘抽奖数据
+    lottery: {
+        drawCount: 0,           // 当前抽奖次数
+        drawCost: 50,           // 每次抽奖消耗的钻石数
+        prizes: [               // 奖项列表
+            { id: '1', name: '谢谢参与', probability: 50, reward: null },
+            { id: '2', name: '5钻石', probability: 20, reward: { type: 'diamond', amount: 5 } },
+            { id: '3', name: '10钻石', probability: 15, reward: { type: 'diamond', amount: 10 } },
+            { id: '4', name: '20钻石', probability: 10, reward: { type: 'diamond', amount: 20 } },
+            { id: '5', name: '50钻石', probability: 4, reward: { type: 'diamond', amount: 50 } },
+            { id: '6', name: '100钻石', probability: 1, reward: { type: 'diamond', amount: 100 } }
+        ]
+    }
 };
 
 // 当前激活的打卡视图
@@ -414,6 +427,15 @@ function updateMakeupCost(cost) {
     const newCost = parseInt(cost);
     if (!isNaN(newCost) && newCost >= 0) {
         appState.settings.checkinCost = newCost;
+        saveData();
+    }
+}
+
+// 更新抽奖消耗钻石数
+function updateLotteryCost(cost) {
+    const newCost = parseInt(cost);
+    if (!isNaN(newCost) && newCost >= 0) {
+        appState.lottery.drawCost = newCost;
         saveData();
     }
 }
@@ -762,12 +784,14 @@ function showSettings() {
     const settingsModal = document.getElementById('settingsModal');
     const githubTokenInput = document.getElementById('githubToken');
     const makeupCostInput = document.getElementById('makeupCost');
-    
+    const lotteryCostInput = document.getElementById('lotteryCost');
+
     if (appState.token) {
         githubTokenInput.value = appState.token;
     }
-    
+
     makeupCostInput.value = appState.settings.checkinCost;
+    lotteryCostInput.value = appState.lottery.drawCost;
     settingsModal.classList.add('active');
 }
 
@@ -2421,6 +2445,386 @@ async function resetData() {
         alert('数据已清空并重置到默认状态！');
     } catch (error) {
         alert('清空数据失败: ' + error.message);
+    }
+}
+
+// ==================== 转盘抽奖功能 ====================
+
+// 全局变量
+let isLotterySpinning = false;
+let currentRotation = 0;
+let targetRotation = 0;
+let editingPrizeId = null;
+
+// 显示兑换选择菜单
+function showExchange() {
+    const choice = confirm('💱 兑换功能\n\n点击"确定"进入转盘抽奖\n点击"取消"进入钻石兑换现金');
+    if (choice) {
+        openLotteryModal();
+    } else {
+        openModal('exchangeModal');
+    }
+}
+
+// 打开转盘抽奖模态框
+function openLotteryModal() {
+    updateLotteryUI();
+    renderLotteryWheel();
+    openModal('lotteryModal');
+}
+
+// 更新转盘抽奖UI
+function updateLotteryUI() {
+    document.getElementById('lotteryDrawCount').textContent = appState.lottery.drawCount;
+    document.getElementById('lotteryDrawCost').textContent = appState.lottery.drawCost;
+}
+
+// 渲染转盘
+function renderLotteryWheel() {
+    const wheel = document.getElementById('lotteryWheel');
+    const prizes = appState.lottery.prizes;
+    const segmentAngle = 360 / prizes.length;
+    
+    wheel.innerHTML = '';
+    
+    prizes.forEach((prize, index) => {
+        const segment = document.createElement('div');
+        const startAngle = index * segmentAngle;
+        const endAngle = (index + 1) * segmentAngle;
+        
+        // 创建扇形
+        segment.style.cssText = `
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            left: 50%;
+            top: 0;
+            transform-origin: 0 100%;
+            transform: rotate(${startAngle}deg);
+            overflow: hidden;
+        `;
+        
+        const inner = document.createElement('div');
+        inner.style.cssText = `
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: -100%;
+            background: ${getPrizeColor(index)};
+            transform: rotate(${segmentAngle}deg);
+            transform-origin: 100% 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        // 添加文字
+        const text = document.createElement('span');
+        text.textContent = prize.name;
+        text.style.cssText = `
+            position: absolute;
+            transform: rotate(${segmentAngle / 2}deg) translateX(60px);
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            white-space: nowrap;
+        `;
+        
+        inner.appendChild(text);
+        segment.appendChild(inner);
+        wheel.appendChild(segment);
+    });
+}
+
+// 获取奖项颜色
+function getPrizeColor(index) {
+    const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', 
+        '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'
+    ];
+    return colors[index % colors.length];
+}
+
+// 开始抽奖
+function startLottery() {
+    if (appState.lottery.drawCount <= 0) {
+        alert('抽奖次数不足，请先兑换抽奖次数！');
+        return;
+    }
+    
+    if (isLotterySpinning) return;
+    
+    isLotterySpinning = true;
+    document.getElementById('lotteryStartBtn').style.display = 'none';
+    document.getElementById('lotteryStopBtn').style.display = 'block';
+    document.getElementById('lotteryResult').style.display = 'none';
+    
+    const wheel = document.getElementById('lotteryWheel');
+    // 持续旋转
+    currentRotation += 360;
+    wheel.style.transform = `rotate(${currentRotation}deg)`;
+    
+    // 自动旋转动画
+    window.lotteryInterval = setInterval(() => {
+        currentRotation += 30;
+        wheel.style.transition = 'none';
+        wheel.style.transform = `rotate(${currentRotation}deg)`;
+    }, 50);
+}
+
+// 停止抽奖
+function stopLottery() {
+    if (!isLotterySpinning) return;
+    
+    clearInterval(window.lotteryInterval);
+    
+    const wheel = document.getElementById('lotteryWheel');
+    const prizes = appState.lottery.prizes;
+    
+    // 根据概率计算中奖奖项
+    const winningPrize = calculateWinningPrize();
+    const prizeIndex = prizes.findIndex(p => p.id === winningPrize.id);
+    
+    // 计算停止角度（让指针指向中奖区域）
+    const segmentAngle = 360 / prizes.length;
+    const targetAngle = 360 - (prizeIndex * segmentAngle + segmentAngle / 2);
+    
+    // 添加多圈旋转后停止
+    currentRotation += 360 * 3 + targetAngle - (currentRotation % 360);
+    wheel.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    wheel.style.transform = `rotate(${currentRotation}deg)`;
+    
+    // 动画结束后处理结果
+    setTimeout(() => {
+        isLotterySpinning = false;
+        document.getElementById('lotteryStartBtn').style.display = 'block';
+        document.getElementById('lotteryStopBtn').style.display = 'none';
+        
+        // 扣除抽奖次数
+        appState.lottery.drawCount--;
+        
+        // 发放奖励
+        if (winningPrize.reward) {
+            if (winningPrize.reward.type === 'diamond') {
+                appState.diamonds += winningPrize.reward.amount;
+            }
+        }
+        
+        // 显示结果
+        showLotteryResult(winningPrize);
+        
+        // 保存数据
+        saveData();
+        updateLotteryUI();
+        updateUI();
+    }, 4000);
+}
+
+// 计算中奖奖项（根据概率）
+function calculateWinningPrize() {
+    const prizes = appState.lottery.prizes;
+    const random = Math.random() * 100;
+    let cumulative = 0;
+    
+    for (const prize of prizes) {
+        cumulative += prize.probability;
+        if (random <= cumulative) {
+            return prize;
+        }
+    }
+    
+    return prizes[prizes.length - 1];
+}
+
+// 显示抽奖结果
+function showLotteryResult(prize) {
+    const resultDiv = document.getElementById('lotteryResult');
+    const resultText = document.getElementById('lotteryResultText');
+    
+    resultDiv.style.display = 'block';
+    
+    if (prize.reward && prize.reward.type === 'diamond') {
+        resultText.textContent = `${prize.name}！`;
+    } else {
+        resultText.textContent = prize.name;
+    }
+}
+
+// 兑换抽奖次数
+function exchangeForDraw() {
+    const cost = appState.lottery.drawCost;
+    
+    if (appState.diamonds < cost) {
+        alert(`钻石不足！需要 ${cost} 钻石，当前只有 ${appState.diamonds} 钻石`);
+        return;
+    }
+    
+    if (!confirm(`确定要消耗 ${cost} 钻石兑换 1 次抽奖机会吗？`)) {
+        return;
+    }
+    
+    appState.diamonds -= cost;
+    appState.lottery.drawCount++;
+    
+    saveData();
+    updateLotteryUI();
+    updateUI();
+    
+    alert('兑换成功！抽奖次数 +1');
+}
+
+// ==================== 奖项管理功能 ====================
+
+// 打开奖项管理
+function openPrizeManager() {
+    renderPrizeList();
+    document.getElementById('prizeForm').style.display = 'none';
+    openModal('prizeManagerModal');
+}
+
+// 渲染奖项列表
+function renderPrizeList() {
+    const list = document.getElementById('prizeList');
+    const prizes = appState.lottery.prizes;
+    
+    // 计算总概率
+    const totalProbability = prizes.reduce((sum, p) => sum + p.probability, 0);
+    
+    // 显示警告
+    const warning = document.getElementById('probabilityWarning');
+    if (totalProbability !== 100) {
+        warning.style.display = 'block';
+        document.getElementById('totalProbability').textContent = totalProbability;
+    } else {
+        warning.style.display = 'none';
+    }
+    
+    list.innerHTML = '';
+    
+    prizes.forEach((prize, index) => {
+        const item = document.createElement('div');
+        item.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        `;
+        
+        const rewardText = prize.reward ? 
+            (prize.reward.type === 'diamond' ? `+${prize.reward.amount}💎` : '') : '无奖励';
+        
+        item.innerHTML = `
+            <div>
+                <div style="font-weight: bold;">${prize.name}</div>
+                <div style="font-size: 12px; color: #666;">概率: ${prize.probability}% | ${rewardText}</div>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-secondary" onclick="editPrize('${prize.id}')" style="margin-right: 5px;">修改</button>
+                <button class="btn btn-sm" onclick="deletePrize('${prize.id}')" style="background: #dc3545; color: white;">删除</button>
+            </div>
+        `;
+        
+        list.appendChild(item);
+    });
+}
+
+// 显示添加奖项表单
+function showAddPrizeForm() {
+    editingPrizeId = null;
+    document.getElementById('prizeName').value = '';
+    document.getElementById('prizeProbability').value = '';
+    document.getElementById('prizeRewardType').value = 'none';
+    document.getElementById('prizeRewardAmount').value = '';
+    document.getElementById('prizeForm').style.display = 'block';
+}
+
+// 编辑奖项
+function editPrize(prizeId) {
+    const prize = appState.lottery.prizes.find(p => p.id === prizeId);
+    if (!prize) return;
+    
+    editingPrizeId = prizeId;
+    document.getElementById('prizeName').value = prize.name;
+    document.getElementById('prizeProbability').value = prize.probability;
+    document.getElementById('prizeRewardType').value = prize.reward ? prize.reward.type : 'none';
+    document.getElementById('prizeRewardAmount').value = prize.reward ? prize.reward.amount : '';
+    document.getElementById('prizeForm').style.display = 'block';
+}
+
+// 保存奖项
+function savePrize() {
+    const name = document.getElementById('prizeName').value.trim();
+    const probability = parseInt(document.getElementById('prizeProbability').value);
+    const rewardType = document.getElementById('prizeRewardType').value;
+    const rewardAmount = parseInt(document.getElementById('prizeRewardAmount').value) || 0;
+    
+    if (!name) {
+        alert('请输入奖项名称！');
+        return;
+    }
+    
+    if (isNaN(probability) || probability < 0 || probability > 100) {
+        alert('概率必须是0-100之间的数字！');
+        return;
+    }
+    
+    const reward = rewardType === 'none' ? null : {
+        type: rewardType,
+        amount: rewardAmount
+    };
+    
+    if (editingPrizeId) {
+        // 修改现有奖项
+        const index = appState.lottery.prizes.findIndex(p => p.id === editingPrizeId);
+        if (index !== -1) {
+            appState.lottery.prizes[index] = {
+                id: editingPrizeId,
+                name,
+                probability,
+                reward
+            };
+        }
+    } else {
+        // 添加新奖项
+        appState.lottery.prizes.push({
+            id: Date.now().toString(),
+            name,
+            probability,
+            reward
+        });
+    }
+    
+    saveData();
+    renderPrizeList();
+    document.getElementById('prizeForm').style.display = 'none';
+    
+    // 如果正在转盘界面，重新渲染转盘
+    if (document.getElementById('lotteryModal').classList.contains('active')) {
+        renderLotteryWheel();
+    }
+}
+
+// 取消奖项表单
+function cancelPrizeForm() {
+    document.getElementById('prizeForm').style.display = 'none';
+    editingPrizeId = null;
+}
+
+// 删除奖项
+function deletePrize(prizeId) {
+    if (!confirm('确定要删除这个奖项吗？')) return;
+    
+    appState.lottery.prizes = appState.lottery.prizes.filter(p => p.id !== prizeId);
+    saveData();
+    renderPrizeList();
+    
+    // 如果正在转盘界面，重新渲染转盘
+    if (document.getElementById('lotteryModal').classList.contains('active')) {
+        renderLotteryWheel();
     }
 }
 
